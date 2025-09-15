@@ -36,6 +36,11 @@ public class Payment
     public string Reference { get; set; } = string.Empty;
 
     /// <summary>
+    /// Numéro de paiement (alias pour Reference pour compatibilité)
+    /// </summary>
+    public string PaymentNumber => Reference;
+
+    /// <summary>
     /// Description du paiement
     /// </summary>
     public string? Description { get; set; }
@@ -195,6 +200,220 @@ public class Payment
             throw new ArgumentException("La date d'expiration doit être dans le futur", nameof(expiresAt));
 
         ExpiresAt = expiresAt;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Définit les données de session du paiement
+    /// </summary>
+    public void SetSessionData(string sessionId, string? ipAddress = null)
+    {
+        SessionId = sessionId;
+        if (!string.IsNullOrEmpty(ipAddress))
+            IpAddress = ipAddress;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Marque le paiement comme réussi
+    /// </summary>
+    public void MarkAsSuccessful()
+    {
+        UpdateStatus(PaymentStatus.Completed);
+    }
+
+    /// <summary>
+    /// Marque le paiement comme échoué
+    /// </summary>
+    public void MarkAsFailed()
+    {
+        UpdateStatus(PaymentStatus.Failed);
+    }
+
+    /// <summary>
+    /// Vérifie si le paiement est entièrement payé
+    /// </summary>
+    public bool IsFullyPaid()
+    {
+        return Status == PaymentStatus.Completed || Status == PaymentStatus.Captured;
+    }
+
+    /// <summary>
+    /// Obtient le montant payé (pour l'instant, retourne le montant total si payé)
+    /// </summary>
+    public Money GetPaidAmount()
+    {
+        return IsFullyPaid() ? Amount : Money.Zero(Amount.Currency);
+    }
+
+    /// <summary>
+    /// Obtient le montant remboursé (pour l'instant, retourne zéro - à implémenter avec les remboursements)
+    /// </summary>
+    public Money GetRefundedAmount()
+    {
+        // TODO: Implémenter avec la logique des remboursements
+        return Money.Zero(Amount.Currency);
+    }
+
+    /// <summary>
+    /// Obtient le montant net (montant - remboursements)
+    /// </summary>
+    public Money GetNetAmount()
+    {
+        return GetPaidAmount().Subtract(GetRefundedAmount());
+    }
+
+    /// <summary>
+    /// Frais de traitement (pour l'instant, retourne null - à implémenter)
+    /// </summary>
+    public Money? ProcessingFees => null;
+
+    /// <summary>
+    /// Mode de frais (pour l'instant, par défaut)
+    /// </summary>
+    public string FeeMode => "Standard";
+
+    /// <summary>
+    /// Montant minimum pour paiement partiel (pour l'instant, null)
+    /// </summary>
+    public Money? MinimumPartialAmount => null;
+
+    /// <summary>
+    /// Dernière méthode de paiement utilisée (basée sur la dernière transaction)
+    /// </summary>
+    public PaymentMethod? LastPaymentMethod => _transactions.LastOrDefault()?.PaymentMethod;
+
+    /// <summary>
+    /// Collection privée de transactions
+    /// </summary>
+    private readonly List<Transaction> _transactions = new();
+
+    /// <summary>
+    /// Collection publique en lecture seule des transactions
+    /// </summary>
+    public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
+
+    /// <summary>
+    /// Collections de remboursements (pour l'instant, collection vide - à implémenter)  
+    /// </summary>
+    public ICollection<object> Refunds => new List<object>();
+
+    /// <summary>
+    /// Données de session (pour l'instant, dictionnaire simple)
+    /// </summary>
+    public Dictionary<string, string> SessionData => Metadata;
+
+    /// <summary>
+    /// Autorise les paiements partiels (pour l'instant, false par défaut)
+    /// </summary>
+    public bool AllowPartialPayments => false;
+
+    /// <summary>
+    /// Vérifie si un paiement partiel est valide
+    /// </summary>
+    public bool IsPartialPaymentValid(Money partialAmount)
+    {
+        if (!AllowPartialPayments) return false;
+        if (MinimumPartialAmount != null)
+            return partialAmount.IsGreaterThan(MinimumPartialAmount);
+        return partialAmount.IsGreaterThan(Money.Zero(Amount.Currency));
+    }
+
+    /// <summary>
+    /// Ajoute une transaction existante au paiement
+    /// </summary>
+    public Transaction AddTransaction(Transaction transaction)
+    {
+        if (transaction == null)
+            throw new ArgumentNullException(nameof(transaction));
+            
+        _transactions.Add(transaction);
+        UpdatedAt = DateTime.UtcNow;
+        return transaction;
+    }
+
+    /// <summary>
+    /// Ajoute une nouvelle transaction avec paramètres (surcharge pour compatibilité Application layer)
+    /// </summary>
+    public Transaction AddTransaction(Money amount, TransactionType transactionType, PaymentMethod paymentMethod, string? ipAddress = null, string? userAgent = null)
+    {
+        // Créer une nouvelle transaction en utilisant le constructeur public
+        var transaction = new Transaction(
+            amount: amount,
+            type: transactionType,
+            paymentMethod: paymentMethod,
+            customerId: CustomerId,
+            merchantId: MerchantId,
+            orderId: OrderId,
+            clientIpAddress: ipAddress,
+            clientUserAgent: userAgent
+        );
+        
+        _transactions.Add(transaction);
+        UpdatedAt = DateTime.UtcNow;
+        return transaction;
+    }
+
+    /// <summary>
+    /// Vérifie si le paiement peut être retenté (pour l'instant, basé sur le statut)
+    /// </summary>
+    public bool CanRetry()
+    {
+        return Status == PaymentStatus.Failed || Status == PaymentStatus.Cancelled;
+    }
+
+    /// <summary>
+    /// Configure la description du paiement (utilise les métadonnées)
+    /// </summary>
+    public void SetDescription(string? description)
+    {
+        if (!string.IsNullOrEmpty(description))
+        {
+            Metadata["description"] = description;
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configure le timeout du paiement 
+    /// </summary>
+    public void SetTimeout(int timeoutMinutes)
+    {
+        // Configure l'expiration basée sur le timeout
+        ExpiresAt = DateTime.UtcNow.AddMinutes(timeoutMinutes);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configure le nombre maximum de tentatives (via métadonnées)
+    /// </summary>
+    public void SetMaxAttempts(int maxAttempts)
+    {
+        Metadata["maxAttempts"] = maxAttempts.ToString();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configure les paiements partiels (via métadonnées pour l'instant)
+    /// </summary>
+    public void SetPartialPayment(bool allowPartialPayments, Money? minimumPartialAmount = null)
+    {
+        Metadata["allowPartialPayments"] = allowPartialPayments.ToString();
+        if (minimumPartialAmount != null)
+        {
+            Metadata["minimumPartialAmount"] = minimumPartialAmount.Amount.ToString();
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configure les URLs de callback
+    /// </summary>
+    public void SetUrls(string? successUrl, string? failureUrl, string? webhookUrl)
+    {
+        ReturnUrl = successUrl;
+        CancelUrl = failureUrl;
+        WebhookUrl = webhookUrl;
         UpdatedAt = DateTime.UtcNow;
     }
 }

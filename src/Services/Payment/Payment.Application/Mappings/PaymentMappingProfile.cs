@@ -82,8 +82,9 @@ public class PaymentMappingProfile : Profile
 public static class MappingExtensions
 {
     /// <summary>
-    /// Mapper un Money vers un montant/devise séparés
+    /// Mapper un Money vers un montant/devise séparés (TODO: Corriger le mapping AutoMapper)
     /// </summary>
+    /*
     public static void MapMoney<TSource, TDest>(this IMappingExpression<TSource, TDest> mapping,
         System.Linq.Expressions.Expression<System.Func<TDest, decimal>> amountProperty,
         System.Linq.Expressions.Expression<System.Func<TDest, string>> currencyProperty,
@@ -94,6 +95,7 @@ public static class MappingExtensions
         mapping.ForMember(currencyProperty, opt => opt.MapFrom(src => 
             sourceProperty.Compile()(src) != null ? sourceProperty.Compile()(src)!.Currency : string.Empty));
     }
+    */
 
     /// <summary>
     /// Créer un Money à partir de montant et devise

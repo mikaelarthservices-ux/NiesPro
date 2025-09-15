@@ -104,20 +104,20 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
                     request.MinimumPartialCurrency ?? request.Currency);
             }
 
-            // 4. Créer le paiement
+            // 4. Créer le paiement avec les paramètres supportés par le constructeur
             var payment = new Domain.Entities.Payment(
-                amount,
-                request.OrderId,
                 request.CustomerId,
                 request.MerchantId,
-                request.Description,
-                request.TimeoutMinutes,
-                request.MaxAttempts,
-                request.AllowPartialPayments,
-                minimumPartialAmount,
-                request.SuccessUrl,
-                request.FailureUrl,
-                request.WebhookUrl);
+                request.OrderId,
+                amount,
+                PaymentMethodType.CreditCard); // Pour l'instant, defaulter à CreditCard
+
+            // 5. Configurer les propriétés additionnelles
+            payment.SetDescription(request.Description);
+            payment.SetTimeout(request.TimeoutMinutes);
+            payment.SetMaxAttempts(request.MaxAttempts);
+            payment.SetPartialPayment(request.AllowPartialPayments, minimumPartialAmount);
+            payment.SetUrls(request.SuccessUrl, request.FailureUrl, request.WebhookUrl);
 
             // 5. Ajouter les métadonnées si présentes
             if (request.Metadata != null)

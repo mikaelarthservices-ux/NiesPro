@@ -253,7 +253,7 @@ public class RefundTransactionHandler : IRequestHandler<RefundTransactionCommand
                 RefundTransactionNumber = refundTransaction.TransactionNumber,
                 OriginalTransactionId = transaction.Id,
                 RefundedAmount = refundAmount.Amount,
-                Currency = refundAmount.Currency,
+                Currency = refundAmount.Currency.Code,
                 Status = refundTransaction.Status,
                 ProcessedAt = refundTransaction.ProcessedAt ?? DateTime.UtcNow,
                 IsSuccess = true
