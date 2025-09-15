@@ -1,0 +1,145 @@
+version: '3.8'
+
+name: niespro-dev
+
+services:
+  # Base de données MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: niespro-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: NiesPro2025!Root
+      MYSQL_DATABASE: NiesPro_Auth
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - niespro-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    container_name: niespro-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - niespro-network
+    command: redis-server --appendonly yes --requirepass "NiesPro2025!Redis"
+
+  # Message Broker RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: niespro-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: niespro
+      RABBITMQ_DEFAULT_PASS: NiesPro2025!Rabbit
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - niespro-network
+
+  # Elasticsearch (pour les logs)
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: niespro-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - niespro-network
+
+  # Kibana (interface pour Elasticsearch)
+  kibana:
+    image: kibana:8.11.0
+    container_name: niespro-kibana
+    restart: unless-stopped
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - niespro-network
+
+  # Mailhog (pour tester les emails en développement)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: niespro-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - niespro-network
+
+  # Seq (pour les logs structurés - alternative à ELK)
+  seq:
+    image: datalust/seq:latest
+    container_name: niespro-seq
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+    networks:
+      - niespro-network
+
+  # API d'authentification
+  auth-api:
+    build:
+      context: .
+      dockerfile: src/Services/Auth/Auth.API/Dockerfile
+    container_name: niespro-auth-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Auth;Uid=root;Pwd=NiesPro2025!Root;
+      - ConnectionStrings__Redis=redis:6379
+    ports:
+      - "8001:80"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - niespro-network
+    volumes:
+      - ./logs/auth:/app/logs
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  seq_data:
+    driver: local
+
+networks:
+  niespro-network:
+    driver: bridge
+    name: niespro-network
