@@ -22,7 +22,7 @@ public class Transaction : BaseEntity
     /// <summary>
     /// Statut de la transaction
     /// </summary>
-    public PaymentStatus Status { get; private set; }
+    public TransactionStatus Status { get; private set; }
 
     /// <summary>
     /// Type de transaction
@@ -120,6 +120,56 @@ public class Transaction : BaseEntity
     public int? FraudScore { get; private set; }
 
     /// <summary>
+    /// Identifiant du paiement associé (Foreign Key)
+    /// </summary>
+    public Guid? PaymentId { get; private set; }
+
+    /// <summary>
+    /// Navigation vers le paiement associé
+    /// </summary>
+    public virtual Payment? Payment { get; private set; }
+
+    /// <summary>
+    /// Identifiant de transaction du processeur de paiement
+    /// </summary>
+    public string? ProcessorTransactionId { get; private set; }
+
+    /// <summary>
+    /// Identifiant de transaction de la passerelle
+    /// </summary>
+    public string? GatewayTransactionId { get; private set; }
+
+    /// <summary>
+    /// Adresse IP pour la transaction (alias vers ClientIpAddress)
+    /// </summary>
+    public string? IpAddress => ClientIpAddress;
+
+    /// <summary>
+    /// Description de la transaction
+    /// </summary>
+    public string? Description { get; private set; }
+
+    /// <summary>
+    /// Réponse du processeur de paiement
+    /// </summary>
+    public string? ProcessorResponse { get; private set; }
+
+    /// <summary>
+    /// Raison de l'échec de la transaction
+    /// </summary>
+    public string? FailureReason { get; private set; }
+
+    /// <summary>
+    /// Empreinte digitale de l'appareil
+    /// </summary>
+    public string? DeviceFingerprint { get; private set; }
+
+    /// <summary>
+    /// Frais de transaction (alias vers Fees pour compatibilité EF)
+    /// </summary>
+    public Money? Fee => Fees;
+
+    /// <summary>
     /// Métadonnées additionnelles
     /// </summary>
     public Dictionary<string, string> Metadata { get; private set; }
@@ -180,7 +230,7 @@ public class Transaction : BaseEntity
         OrderId = orderId;
         ClientIpAddress = clientIpAddress;
         ClientUserAgent = clientUserAgent;
-        Status = PaymentStatus.Pending;
+        Status = TransactionStatus.Pending;
         Metadata = new Dictionary<string, string>();
         ChildTransactions = new List<Transaction>();
         CreatedAt = DateTime.UtcNow;
@@ -195,10 +245,10 @@ public class Transaction : BaseEntity
     /// </summary>
     public void Authorize(string authorizationCode, DateTime? expiresAt = null)
     {
-        if (Status != PaymentStatus.Pending)
+        if (Status != TransactionStatus.Pending)
             throw new InvalidOperationException($"Cannot authorize transaction in status {Status}");
 
-        Status = PaymentStatus.Authorized;
+        Status = TransactionStatus.Successful;
         AuthorizationCode = authorizationCode;
         AuthorizationExpiresAt = expiresAt ?? DateTime.UtcNow.AddHours(7); // Défaut 7 jours
         ProcessedAt = DateTime.UtcNow;
@@ -212,7 +262,7 @@ public class Transaction : BaseEntity
     /// </summary>
     public void Capture(Money? captureAmount = null, Money? fees = null)
     {
-        if (Status != PaymentStatus.Authorized)
+        if (Status != TransactionStatus.Processing)
             throw new InvalidOperationException($"Cannot capture transaction in status {Status}");
 
         var amountToCapture = captureAmount ?? Amount;
@@ -229,7 +279,7 @@ public class Transaction : BaseEntity
             CreatePartialCaptureTransaction(amountToCapture);
         }
 
-        Status = PaymentStatus.Captured;
+        Status = TransactionStatus.Successful;
         Amount = amountToCapture;
         Fees = fees;
         ProcessedAt = DateTime.UtcNow;
@@ -243,10 +293,10 @@ public class Transaction : BaseEntity
     /// </summary>
     public void Decline(PaymentDeclineReason reason, string? errorMessage = null)
     {
-        if (Status is PaymentStatus.Captured or PaymentStatus.Settled)
+        if (Status is TransactionStatus.Successful or TransactionStatus.Refunded)
             throw new InvalidOperationException($"Cannot decline transaction in status {Status}");
 
-        Status = PaymentStatus.Failed;
+        Status = TransactionStatus.Failed;
         DeclineReason = reason;
         ErrorMessage = errorMessage;
         ProcessedAt = DateTime.UtcNow;
@@ -260,10 +310,10 @@ public class Transaction : BaseEntity
     /// </summary>
     public void Cancel(string? reason = null)
     {
-        if (Status is PaymentStatus.Captured or PaymentStatus.Settled)
+        if (Status is TransactionStatus.Successful or TransactionStatus.Refunded)
             throw new InvalidOperationException($"Cannot cancel transaction in status {Status}. Use refund instead.");
 
-        Status = PaymentStatus.Cancelled;
+        Status = TransactionStatus.Cancelled;
         ErrorMessage = reason;
         UpdatedAt = DateTime.UtcNow;
 
@@ -275,7 +325,7 @@ public class Transaction : BaseEntity
     /// </summary>
     public Transaction Refund(Money refundAmount, string? reason = null)
     {
-        if (Status != PaymentStatus.Captured && Status != PaymentStatus.Settled)
+        if (Status != TransactionStatus.Successful)
             throw new InvalidOperationException($"Cannot refund transaction in status {Status}");
 
         if (refundAmount > Amount)
@@ -299,8 +349,8 @@ public class Transaction : BaseEntity
         if (!string.IsNullOrEmpty(reason))
             refundTransaction.SetMetadata("refund_reason", reason);
 
-        // Marquer immédiatement comme capturée car c'est un remboursement
-        refundTransaction.Status = PaymentStatus.Captured;
+        // Marquer immédiatement comme réussie car c'est un remboursement
+        refundTransaction.Status = TransactionStatus.Successful;
         refundTransaction.ProcessedAt = DateTime.UtcNow;
 
         ChildTransactions.Add(refundTransaction);
@@ -316,10 +366,10 @@ public class Transaction : BaseEntity
     /// </summary>
     public void Settle()
     {
-        if (Status != PaymentStatus.Captured)
+        if (Status != TransactionStatus.Successful)
             throw new InvalidOperationException($"Cannot settle transaction in status {Status}");
 
-        Status = PaymentStatus.Settled;
+        Status = TransactionStatus.Successful; // Ou garder le même statut
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new TransactionSettledEvent(Id, TransactionNumber, Amount));
@@ -373,7 +423,7 @@ public class Transaction : BaseEntity
     public Money GetTotalRefundedAmount()
     {
         return ChildTransactions
-            .Where(t => t.Type == TransactionType.Refund && t.Status == PaymentStatus.Captured)
+            .Where(t => t.Type == TransactionType.Refund && t.Status == TransactionStatus.Successful)
             .Aggregate(Money.Zero(Amount.Currency), (sum, refund) => sum + refund.Amount);
     }
 
@@ -382,7 +432,7 @@ public class Transaction : BaseEntity
     /// </summary>
     public bool CanBeRefunded()
     {
-        return Status is PaymentStatus.Captured or PaymentStatus.Settled &&
+        return Status is TransactionStatus.Successful &&
                GetTotalRefundedAmount() < Amount;
     }
 

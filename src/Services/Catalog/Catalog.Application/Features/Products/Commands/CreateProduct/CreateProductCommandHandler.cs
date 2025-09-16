@@ -3,7 +3,7 @@ using Catalog.Domain.Entities;
 using Catalog.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using NiesPro.Contracts.Common;
+using BuildingBlocks.Common.DTOs;
 
 namespace Catalog.Application.Features.Products.Commands.CreateProduct
 {

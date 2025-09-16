@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NiesPro.Common.Models;
+using BuildingBlocks.Common.DTOs;
 using System.Net;
 using System.Text.Json;
 
@@ -71,38 +72,32 @@ namespace NiesPro.WebApi.Middleware
         {
             context.Response.ContentType = "application/json";
 
-            var response = new ApiResponse<object>();
+            BuildingBlocks.Common.DTOs.ApiResponse<object> response;
 
             switch (exception)
             {
                 case NotFoundException notFoundEx:
-                    response.Success = false;
-                    response.Message = notFoundEx.Message;
+                    response = BuildingBlocks.Common.DTOs.ApiResponse<object>.CreateError(notFoundEx.Message);
                     context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                     break;
 
                 case ValidationException validationEx:
-                    response.Success = false;
-                    response.Message = validationEx.Message;
-                    response.Errors = validationEx.Errors.SelectMany(x => x.Value).ToList();
+                    response = BuildingBlocks.Common.DTOs.ApiResponse<object>.CreateError(validationEx.Message, validationEx.Errors.SelectMany(x => x.Value).ToList());
                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     break;
 
                 case UnauthorizedException unauthorizedEx:
-                    response.Success = false;
-                    response.Message = unauthorizedEx.Message;
+                    response = BuildingBlocks.Common.DTOs.ApiResponse<object>.CreateError(unauthorizedEx.Message);
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                     break;
 
                 case BusinessException businessEx:
-                    response.Success = false;
-                    response.Message = businessEx.Message;
+                    response = BuildingBlocks.Common.DTOs.ApiResponse<object>.CreateError(businessEx.Message);
                     context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     break;
 
                 default:
-                    response.Success = false;
-                    response.Message = "An internal server error occurred";
+                    response = BuildingBlocks.Common.DTOs.ApiResponse<object>.CreateError("An internal server error occurred");
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     break;
             }

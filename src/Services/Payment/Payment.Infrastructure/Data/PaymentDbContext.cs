@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Payment.Domain.Entities;
 using Payment.Domain.Events;
 using Payment.Infrastructure.Data.Configurations;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Payment.Infrastructure.Data;
@@ -50,7 +51,7 @@ public class PaymentDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CardConfiguration());
         modelBuilder.ApplyConfiguration(new ThreeDSecureAuthenticationConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentRefundConfiguration());
-        modelBuilder.ApplyConfiguration(new MerchantConfiguration());
+        modelBuilder.ApplyConfiguration(new MerchantConfigurationConfiguration());
 
         // Event Store configurations
         modelBuilder.ApplyConfiguration(new StoredEventConfiguration());
@@ -183,9 +184,13 @@ public class PaymentDbContext : DbContext
             var deletedAtProperty = entityType.FindProperty("DeletedAt");
             if (deletedAtProperty != null)
             {
-                // Configuration du soft delete
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(e => EF.Property<DateTime?>(e, "DeletedAt") == null);
+                // Configuration du soft delete avec expression lambda typée
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var property = Expression.Call(typeof(EF), nameof(EF.Property), new[] { typeof(DateTime?) }, parameter, Expression.Constant("DeletedAt"));
+                var condition = Expression.Equal(property, Expression.Constant(null, typeof(DateTime?)));
+                var lambda = Expression.Lambda(condition, parameter);
+                
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
 

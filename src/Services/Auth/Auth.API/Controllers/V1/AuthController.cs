@@ -6,7 +6,7 @@ using Auth.Application.Features.Users.Commands.RegisterUser;
 using Auth.Application.Features.Users.Commands.ChangePassword;
 using Auth.API.Models.Requests;
 using Auth.API.Models.Responses;
-using NiesPro.Contracts.Common;
+using BuildingBlocks.Common.DTOs;
 
 namespace Auth.API.Controllers.V1
 {

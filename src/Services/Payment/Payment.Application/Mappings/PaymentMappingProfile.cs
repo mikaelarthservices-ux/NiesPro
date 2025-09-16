@@ -1,5 +1,6 @@
 using AutoMapper;
 using Payment.Application.DTOs;
+using Payment.Application.Utilities;
 using Payment.Domain.Entities;
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
@@ -111,7 +112,7 @@ public static class MappingExtensions
     public static PaymentMethodUsageStatsDto CalculateUsageStats(PaymentMethod paymentMethod, List<Transaction> transactions)
     {
         var relevantTransactions = transactions.Where(t => t.PaymentMethodId == paymentMethod.Id).ToList();
-        var successfulTransactions = relevantTransactions.Where(t => t.Status == PaymentStatus.Captured || t.Status == PaymentStatus.Settled).ToList();
+        var successfulTransactions = relevantTransactions.Where(t => t.Status.IsEquivalentTo(PaymentStatus.Captured) || t.Status.IsEquivalentTo(PaymentStatus.Settled)).ToList();
 
         return new PaymentMethodUsageStatsDto
         {

@@ -4,7 +4,7 @@ using Auth.Application.Features.Users.Commands.RegisterUser;
 using Auth.Domain.Interfaces;
 using Auth.Application.Contracts.Services;
 using Auth.Application.Common.Models;
-using NiesPro.Contracts.Common;
+using BuildingBlocks.Common.DTOs;
 using Auth.Domain.Entities;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser

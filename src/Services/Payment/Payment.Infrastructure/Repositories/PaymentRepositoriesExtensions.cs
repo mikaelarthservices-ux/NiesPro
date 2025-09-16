@@ -165,12 +165,6 @@ public partial class CardRepository
 /// </summary>
 public partial class ThreeDSecureRepository
 {
-    public async Task<ThreeDSecureAuthentication?> GetByTransactionIdAsync(Guid transactionId, CancellationToken cancellationToken = default)
-    {
-        return await _context.ThreeDSecureAuthentications
-            .FirstOrDefaultAsync(tds => tds.TransactionId == transactionId, cancellationToken);
-    }
-
     public async Task<List<ThreeDSecureAuthentication>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
     {
         return await _context.ThreeDSecureAuthentications

@@ -627,24 +627,10 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
             .HasMaxLength(50);
 
         // Configuration de l'adresse (Value Object)
-        builder.OwnsOne(m => m.Address, address =>
-        {
-            address.Property(a => a.Street)
-                .HasColumnName("AddressStreet")
-                .HasMaxLength(200);
-
-            address.Property(a => a.City)
-                .HasColumnName("AddressCity")
-                .HasMaxLength(100);
-
-            address.Property(a => a.PostalCode)
-                .HasColumnName("AddressPostalCode")
-                .HasMaxLength(20);
-
-            address.Property(a => a.Country)
-                .HasColumnName("AddressCountry")
-                .HasMaxLength(100);
-        });
+        // Configuration de l'adresse comme propriété simple
+        builder.Property(m => m.Address)
+            .HasColumnName("Address")
+            .HasMaxLength(500);
 
         // Métadonnées et configuration
         builder.Property(m => m.Metadata)
@@ -662,7 +648,7 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
         builder.Property(m => m.UpdatedAt);
 
         // Configuration des relations
-        builder.HasMany<MerchantConfiguration>()
+        builder.HasMany<Payment.Domain.Entities.MerchantConfiguration>()
             .WithOne(mc => mc.Merchant)
             .HasForeignKey(mc => mc.MerchantId)
             .OnDelete(DeleteBehavior.Cascade);

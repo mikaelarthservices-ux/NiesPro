@@ -62,6 +62,14 @@ namespace Auth.API.Extensions
                 .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
                 // .AddDbContextCheck<Auth.Infrastructure.Data.AuthDbContext>("database"); // Commented until Infrastructure is ready
 
+            // Add Authentication & Authorization
+            services.AddAuthentication()
+                .AddJwtBearer();
+            services.AddAuthorization();
+
+            // Add Swagger documentation
+            services.AddSwaggerDocumentation();
+
             return services;
         }
 

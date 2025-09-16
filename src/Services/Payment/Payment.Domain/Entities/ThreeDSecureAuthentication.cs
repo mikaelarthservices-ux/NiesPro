@@ -83,9 +83,49 @@ public class ThreeDSecureAuthentication
     public string? DirectoryServerTransactionId { get; private set; }
 
     /// <summary>
+    /// URL ACS (Access Control Server)
+    /// </summary>
+    public string? AcsUrl { get; private set; }
+
+    /// <summary>
+    /// Payer Authentication Request
+    /// </summary>
+    public string? PaReq { get; private set; }
+
+    /// <summary>
+    /// Merchant Data
+    /// </summary>
+    public string? Md { get; private set; }
+
+    /// <summary>
+    /// Valeur d'authentification 3DS
+    /// </summary>
+    public string? AuthenticationValue { get; private set; }
+
+    /// <summary>
+    /// Message d'erreur (si applicable)
+    /// </summary>
+    public string? ErrorMessage { get; private set; }
+
+    /// <summary>
+    /// Identifiant du client (pour requêtes)
+    /// </summary>
+    public Guid? CustomerId { get; private set; }
+
+    /// <summary>
+    /// Navigation vers la carte associée
+    /// </summary>
+    public virtual Card? Card { get; private set; }
+
+    /// <summary>
     /// Date de création
     /// </summary>
     public DateTime CreatedAt { get; private set; }
+
+    /// <summary>
+    /// Date de mise à jour
+    /// </summary>
+    public DateTime? UpdatedAt { get; private set; }
 
     /// <summary>
     /// Date de completion
@@ -167,6 +207,45 @@ public class ThreeDSecureAuthentication
         ProviderResponseCode = providerResponseCode;
         ProviderMessage = providerMessage;
         CompletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer les données ACS
+    /// </summary>
+    public void SetAcsData(string acsUrl, string paReq, string md)
+    {
+        AcsUrl = acsUrl ?? throw new ArgumentNullException(nameof(acsUrl));
+        PaReq = paReq ?? throw new ArgumentNullException(nameof(paReq));
+        Md = md ?? throw new ArgumentNullException(nameof(md));
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer la valeur d'authentification
+    /// </summary>
+    public void SetAuthenticationValue(string authenticationValue)
+    {
+        AuthenticationValue = authenticationValue ?? throw new ArgumentNullException(nameof(authenticationValue));
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer un message d'erreur
+    /// </summary>
+    public void SetErrorMessage(string errorMessage)
+    {
+        ErrorMessage = errorMessage;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Associer un client
+    /// </summary>
+    public void SetCustomerId(Guid customerId)
+    {
+        CustomerId = customerId;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>

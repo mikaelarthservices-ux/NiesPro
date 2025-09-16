@@ -7,24 +7,29 @@ namespace Payment.Domain.Enums;
 public enum PaymentStatus
 {
     /// <summary>
+    /// Paiement créé mais pas encore initié
+    /// </summary>
+    Created = 0,
+
+    /// <summary>
     /// Paiement en cours de création
     /// </summary>
-    Pending = 0,
+    Pending = 1,
 
     /// <summary>
     /// Paiement autorisé mais pas encore capturé
     /// </summary>
-    Authorized = 1,
+    Authorized = 2,
 
     /// <summary>
     /// Paiement capturé et confirmé
     /// </summary>
-    Captured = 2,
+    Captured = 3,
 
     /// <summary>
     /// Paiement réussi et finalisé
     /// </summary>
-    Completed = 3,
+    Completed = 4,
 
     /// <summary>
     /// Paiement échoué

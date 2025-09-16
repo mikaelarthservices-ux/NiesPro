@@ -3,6 +3,7 @@ using AutoMapper;
 using Payment.Application.Commands;
 using Payment.Application.DTOs;
 using Payment.Application.Services;
+using Payment.Application.Utilities;
 using Payment.Domain.Entities;
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
@@ -59,12 +60,12 @@ public class CaptureTransactionHandler : IRequestHandler<CaptureTransactionComma
             }
 
             // 2. Vérifier que la transaction peut être capturée
-            if (transaction.Status != PaymentStatus.Authorized)
+            if (!transaction.Status.IsEquivalentTo(PaymentStatus.Authorized))
             {
                 return new CaptureTransactionResult
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"La transaction ne peut pas être capturée dans l'état {transaction.Status}"
+                    ErrorMessage = $"La transaction ne peut pas être capturée dans l'état {transaction.Status.ToPaymentStatus()}"
                 };
             }
 
@@ -128,7 +129,7 @@ public class CaptureTransactionHandler : IRequestHandler<CaptureTransactionComma
             {
                 TransactionId = transaction.Id,
                 TransactionNumber = transaction.TransactionNumber,
-                Status = transaction.Status,
+                Status = transaction.Status.ToPaymentStatus(),
                 CapturedAmount = transaction.Amount.Amount,
                 Currency = transaction.Amount.Currency.Code,
                 Fees = transaction.Fees?.Amount,
@@ -254,7 +255,7 @@ public class RefundTransactionHandler : IRequestHandler<RefundTransactionCommand
                 OriginalTransactionId = transaction.Id,
                 RefundedAmount = refundAmount.Amount,
                 Currency = refundAmount.Currency.Code,
-                Status = refundTransaction.Status,
+                Status = refundTransaction.Status.ToPaymentStatus(),
                 ProcessedAt = refundTransaction.ProcessedAt ?? DateTime.UtcNow,
                 IsSuccess = true
             };

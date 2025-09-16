@@ -25,6 +25,11 @@ public class Payment
     public Guid MerchantId { get; set; }
 
     /// <summary>
+    /// Navigation vers le marchand
+    /// </summary>
+    public Merchant? Merchant { get; set; }
+
+    /// <summary>
     /// Identifiant de la commande associée
     /// </summary>
     public Guid OrderId { get; set; }
@@ -48,7 +53,7 @@ public class Payment
     /// <summary>
     /// Statut actuel du paiement
     /// </summary>
-    public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
+    public PaymentStatus Status { get; set; } = PaymentStatus.Created;
 
     /// <summary>
     /// Méthode de paiement utilisée
@@ -109,6 +114,16 @@ public class Payment
     /// Adresse IP du client
     /// </summary>
     public string? IpAddress { get; set; }
+
+    /// <summary>
+    /// User agent du navigateur client
+    /// </summary>
+    public string? UserAgent { get; set; }
+
+    /// <summary>
+    /// Date de suppression (soft delete)
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
 
     /// <summary>
     /// Constructeur par défaut
@@ -294,9 +309,9 @@ public class Payment
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
 
     /// <summary>
-    /// Collections de remboursements (pour l'instant, collection vide - à implémenter)  
+    /// Collections de remboursements associés à ce paiement  
     /// </summary>
-    public ICollection<object> Refunds => new List<object>();
+    public virtual ICollection<PaymentRefund> Refunds { get; private set; } = new List<PaymentRefund>();
 
     /// <summary>
     /// Données de session (pour l'instant, dictionnaire simple)

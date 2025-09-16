@@ -205,4 +205,54 @@ public class Merchant : BaseEntity
     {
         return $"whsec_{Guid.NewGuid():N}";
     }
+
+    // ====== PROPRIÉTÉS ADDITIONNELLES POUR INFRASTRUCTURE COMPATIBILITY ======
+
+    /// <summary>
+    /// Code unique du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public string Code => ApiKey.Length > 8 ? ApiKey.Substring(0, 8).ToUpper() : ApiKey.ToUpper();
+
+    /// <summary>
+    /// Description du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public string? Description { get; private set; }
+
+    /// <summary>
+    /// Site web du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public string? Website { get; private set; }
+
+    /// <summary>
+    /// Email de support du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public string? SupportEmail => Email;
+
+    /// <summary>
+    /// Téléphone de support du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public string? SupportPhone => Phone;
+
+    /// <summary>
+    /// Métadonnées du marchand (pour compatibilité Infrastructure)
+    /// </summary>
+    public Dictionary<string, string> Metadata { get; private set; } = new();
+
+    /// <summary>
+    /// Configure la description du marchand
+    /// </summary>
+    public void SetDescription(string? description)
+    {
+        Description = description;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configure le site web du marchand
+    /// </summary>
+    public void SetWebsite(string? website)
+    {
+        Website = website;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

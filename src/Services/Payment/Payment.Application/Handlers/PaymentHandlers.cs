@@ -2,6 +2,7 @@ using MediatR;
 using AutoMapper;
 using Payment.Application.Commands;
 using Payment.Application.DTOs;
+using Payment.Application.Utilities;
 using Payment.Domain.Entities;
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
@@ -273,7 +274,7 @@ public class ProcessPaymentHandler : IRequestHandler<ProcessPaymentCommand, Proc
                 {
                     TransactionId = transaction.Id,
                     TransactionNumber = transaction.TransactionNumber,
-                    Status = transaction.Status,
+                    Status = transaction.Status.ToPaymentStatus(),
                     Amount = transaction.Amount.Amount,
                     Currency = transaction.Amount.Currency.Code,
                     DeclineReason = PaymentDeclineReason.FraudSuspected,
@@ -300,7 +301,7 @@ public class ProcessPaymentHandler : IRequestHandler<ProcessPaymentCommand, Proc
                     {
                         TransactionId = transaction.Id,
                         TransactionNumber = transaction.TransactionNumber,
-                        Status = transaction.Status,
+                        Status = transaction.Status.ToPaymentStatus(),
                         Amount = transaction.Amount.Amount,
                         Currency = transaction.Amount.Currency.Code,
                         DeclineReason = PaymentDeclineReason.ThreeDSecureFailed,
@@ -362,7 +363,7 @@ public class ProcessPaymentHandler : IRequestHandler<ProcessPaymentCommand, Proc
             {
                 TransactionId = transaction.Id,
                 TransactionNumber = transaction.TransactionNumber,
-                Status = transaction.Status,
+                Status = transaction.Status.ToPaymentStatus(),
                 AuthorizationCode = transaction.AuthorizationCode,
                 ExternalReference = transaction.ExternalReference,
                 Amount = transaction.Amount.Amount,

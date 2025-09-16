@@ -1,5 +1,6 @@
 using Auth.API.Extensions;
 using Auth.Application.Extensions;
+using Auth.Infrastructure.Extensions;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ try
 
     builder.Services.AddApiServices(builder.Configuration);
     builder.Services.AddAuthApplication();
+    builder.Services.AddInfrastructureServices(builder.Configuration);
 
     var app = builder.Build();
 

@@ -21,6 +21,11 @@ public enum TransactionStatus
     Successful = 2,
 
     /// <summary>
+    /// Transaction complétée (alias pour Successful)
+    /// </summary>
+    Completed = 2,
+
+    /// <summary>
     /// Transaction échouée
     /// </summary>
     Failed = 3,

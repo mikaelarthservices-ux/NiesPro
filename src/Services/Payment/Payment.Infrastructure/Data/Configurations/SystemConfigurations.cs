@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Payment.Domain.Entities;
 using Payment.Infrastructure.Data;
 
 namespace Payment.Infrastructure.Data.Configurations;
@@ -330,9 +331,9 @@ public class PaymentProcessorConfigurationConfiguration : IEntityTypeConfigurati
 /// <summary>
 /// Configuration Entity Framework pour la configuration des marchands
 /// </summary>
-public class MerchantConfigurationConfiguration : IEntityTypeConfiguration<MerchantConfiguration>
+public class MerchantConfigurationConfiguration : IEntityTypeConfiguration<Payment.Domain.Entities.MerchantConfiguration>
 {
-    public void Configure(EntityTypeBuilder<MerchantConfiguration> builder)
+    public void Configure(EntityTypeBuilder<Payment.Domain.Entities.MerchantConfiguration> builder)
     {
         // Table et clé primaire
         builder.ToTable("MerchantConfigurations");

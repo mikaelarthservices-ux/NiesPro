@@ -76,7 +76,7 @@ public interface ICardRepository : IBaseRepository<Card>
 /// </summary>
 public interface IThreeDSecureRepository : IBaseRepository<ThreeDSecureAuthentication>
 {
-    Task<ThreeDSecureAuthentication?> GetByTransactionIdAsync(Guid transactionId, CancellationToken cancellationToken = default);
+    Task<ThreeDSecureAuthentication?> GetByTransactionIdAsync(string transactionId, CancellationToken cancellationToken = default);
     Task<List<ThreeDSecureAuthentication>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
 }
 

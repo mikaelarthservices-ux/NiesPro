@@ -19,6 +19,11 @@ public class PaymentMethod : BaseEntity
     public string DisplayName { get; private set; }
 
     /// <summary>
+    /// Nom du moyen de paiement (alias pour DisplayName)
+    /// </summary>
+    public string Name => DisplayName;
+
+    /// <summary>
     /// Indique si ce moyen de paiement est actif
     /// </summary>
     public bool IsActive { get; private set; }
@@ -62,6 +67,11 @@ public class PaymentMethod : BaseEntity
     /// Token de sécurité pour les intégrations externes
     /// </summary>
     public string? ExternalToken { get; private set; }
+
+    /// <summary>
+    /// Token sécurisé pour les transactions
+    /// </summary>
+    public string? Token { get; private set; }
 
     /// <summary>
     /// Dernière date d'utilisation
@@ -192,6 +202,27 @@ public class PaymentMethod : BaseEntity
             throw new ArgumentException("Metadata key cannot be null or empty", nameof(key));
 
         Metadata[key] = value ?? string.Empty;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer le token sécurisé
+    /// </summary>
+    public void SetToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentException("Token cannot be null or empty", nameof(token));
+
+        Token = token;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Effacer le token sécurisé
+    /// </summary>
+    public void ClearToken()
+    {
+        Token = null;
         UpdatedAt = DateTime.UtcNow;
     }
 

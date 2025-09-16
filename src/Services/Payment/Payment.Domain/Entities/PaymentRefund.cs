@@ -24,6 +24,21 @@ public class PaymentRefund : BaseEntity
     public string RefundNumber { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Référence unique du remboursement (alias pour RefundNumber)
+    /// </summary>
+    public string Reference => RefundNumber;
+
+    /// <summary>
+    /// Identifiant du remboursement côté processeur de paiement
+    /// </summary>
+    public string? ProcessorRefundId { get; private set; }
+
+    /// <summary>
+    /// Réponse du processeur de paiement
+    /// </summary>
+    public string? ProcessorResponse { get; private set; }
+
+    /// <summary>
     /// Montant du remboursement
     /// </summary>
     public Money Amount { get; private set; } = null!;
@@ -107,6 +122,22 @@ public class PaymentRefund : BaseEntity
         Status = RefundStatus.Processing;
         ExternalRefundId = externalRefundId;
         ProcessedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer l'identifiant du processeur
+    /// </summary>
+    public void SetProcessorRefundId(string processorRefundId)
+    {
+        ProcessorRefundId = processorRefundId ?? throw new ArgumentNullException(nameof(processorRefundId));
+    }
+
+    /// <summary>
+    /// Configurer la réponse du processeur
+    /// </summary>
+    public void SetProcessorResponse(string processorResponse)
+    {
+        ProcessorResponse = processorResponse;
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
 using Auth.Infrastructure.Data;
 using Auth.Domain.Interfaces;
 using Auth.Infrastructure.Repositories;
+using Auth.Infrastructure.Services;
+using Auth.Application.Contracts.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +28,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeviceRepository, DeviceRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
+        // Security Services - Use Auth-specific adapters
+        services.AddScoped<IPasswordService, PasswordServiceAdapter>();
+        services.AddScoped<IJwtService, JwtServiceAdapter>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }

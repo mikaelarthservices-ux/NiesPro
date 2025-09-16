@@ -29,6 +29,11 @@ public class Card
     public string Last4Digits { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Alias pour les 4 derniers chiffres (compatibilité Infrastructure)
+    /// </summary>
+    public string LastFourDigits => Last4Digits;
+
+    /// <summary>
     /// Nom du porteur
     /// </summary>
     public string CardholderName { get; private set; } = string.Empty;
@@ -59,6 +64,23 @@ public class Card
     public Guid CustomerId { get; private set; }
 
     /// <summary>
+    /// Indique si cette carte est la carte par défaut du client
+    /// </summary>
+    public bool IsDefault { get; private set; } = false;
+
+    /// <summary>
+    /// Numéro complet de la carte (utilisé temporairement pour traitement)
+    /// ATTENTION: À ne jamais persister en base
+    /// </summary>
+    public string? CardNumber { get; private set; }
+
+    /// <summary>
+    /// Code de vérification de la carte (utilisé temporairement pour traitement)
+    /// ATTENTION: À ne jamais persister en base
+    /// </summary>
+    public string? Cvv { get; private set; }
+
+    /// <summary>
     /// Indique si la carte est active
     /// </summary>
     public bool IsActive { get; private set; } = true;
@@ -67,6 +89,11 @@ public class Card
     /// Date de création
     /// </summary>
     public DateTime CreatedAt { get; private set; }
+
+    /// <summary>
+    /// Date de mise à jour
+    /// </summary>
+    public DateTime? UpdatedAt { get; private set; }
 
     /// <summary>
     /// Date de dernière utilisation
@@ -84,22 +111,20 @@ public class Card
     public string? EncryptedBillingAddress { get; private set; }
 
     /// <summary>
-    /// 4 derniers chiffres (alias pour compatibilité)
+    /// Constructeur par défaut
     /// </summary>
-    public string LastFourDigits => Last4Digits;
-
-    /// <summary>
-    /// Constructeur pour Entity Framework
-    /// </summary>
-    private Card() { }
+    private Card()
+    {
+        Id = Guid.NewGuid();
+    }
 
     /// <summary>
     /// Constructeur principal
     /// </summary>
     public Card(string token, string maskedNumber, string last4Digits, string cardholderName,
                 int expiryMonth, int expiryYear, CardBrand brand, string cardType, Guid customerId)
+        : this()
     {
-        Id = Guid.NewGuid();
         Token = token ?? throw new ArgumentNullException(nameof(token));
         MaskedNumber = maskedNumber ?? throw new ArgumentNullException(nameof(maskedNumber));
         Last4Digits = last4Digits ?? throw new ArgumentNullException(nameof(last4Digits));
@@ -137,17 +162,18 @@ public class Card
     /// <summary>
     /// Définir l'adresse de facturation chiffrée
     /// </summary>
-    public void SetEncryptedBillingAddress(string encryptedBillingAddress)
+    public void SetEncryptedBillingAddress(string encryptedAddress)
     {
-        EncryptedBillingAddress = encryptedBillingAddress ?? throw new ArgumentNullException(nameof(encryptedBillingAddress));
+        EncryptedBillingAddress = encryptedAddress ?? throw new ArgumentNullException(nameof(encryptedAddress));
     }
 
     /// <summary>
-    /// Marquer la carte comme utilisée
+    /// Marquer la dernière utilisation
     /// </summary>
     public void MarkAsUsed()
     {
         LastUsedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -156,14 +182,53 @@ public class Card
     public void Deactivate()
     {
         IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
-    /// Réactiver la carte
+    /// Activer la carte
     /// </summary>
     public void Activate()
     {
         IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Définir comme carte par défaut
+    /// </summary>
+    public void SetAsDefault()
+    {
+        IsDefault = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Retirer le statut carte par défaut
+    /// </summary>
+    public void RemoveDefault()
+    {
+        IsDefault = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Configurer les données temporaires de carte (pour traitement uniquement)
+    /// ATTENTION: Ces données ne doivent jamais être persistées
+    /// </summary>
+    public void SetTemporaryCardData(string cardNumber, string cvv)
+    {
+        CardNumber = cardNumber;
+        Cvv = cvv;
+    }
+
+    /// <summary>
+    /// Effacer les données temporaires de carte après traitement
+    /// </summary>
+    public void ClearTemporaryCardData()
+    {
+        CardNumber = null;
+        Cvv = null;
     }
 
     /// <summary>
@@ -194,8 +259,8 @@ public class Card
         if (string.IsNullOrWhiteSpace(MaskedNumber))
             throw new ArgumentException("Le numéro masqué ne peut pas être vide", nameof(MaskedNumber));
             
-        if (string.IsNullOrWhiteSpace(Last4Digits) || Last4Digits.Length != 4)
-            throw new ArgumentException("Les 4 derniers chiffres doivent être fournis", nameof(Last4Digits));
+        if (string.IsNullOrWhiteSpace(Last4Digits))
+            throw new ArgumentException("Les 4 derniers chiffres ne peuvent pas être vides", nameof(Last4Digits));
             
         if (string.IsNullOrWhiteSpace(CardholderName))
             throw new ArgumentException("Le nom du porteur ne peut pas être vide", nameof(CardholderName));
