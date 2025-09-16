@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using Auth.Application.Features.Authentication.Commands.Login;
+using Auth.Application.Features.Authentication.Commands.RefreshToken;
 using Auth.Application.Features.Users.Commands.RegisterUser;
 using Auth.Application.Features.Users.Commands.ChangePassword;
 using Auth.API.Models.Requests;
@@ -228,15 +229,30 @@ namespace Auth.API.Controllers.V1
             {
                 _logger.LogInformation("Token refresh attempt");
 
-                // TODO: Implement RefreshTokenCommand
-                // var command = new RefreshTokenCommand
-                // {
-                //     RefreshToken = request.RefreshToken,
-                //     DeviceKey = request.DeviceKey
-                // };
-                // var result = await _mediator.Send(command);
+                var command = new RefreshTokenCommand
+                {
+                    RefreshToken = request.RefreshToken,
+                    IpAddress = GetClientIpAddress(),
+                    UserAgent = GetUserAgent()
+                };
 
-                return BadRequest(ApiResponse<object>.CreateError("Refresh token functionality not implemented yet"));
+                var result = await _mediator.Send(command);
+
+                if (result.IsSuccess)
+                {
+                    var response = new AuthResponse
+                    {
+                        AccessToken = result.Data.AccessToken,
+                        RefreshToken = result.Data.RefreshToken,
+                        ExpiresAt = result.Data.ExpiresAt,
+                        ExpiresIn = result.Data.ExpiresIn,
+                        TokenType = result.Data.TokenType
+                    };
+
+                    return Ok(ApiResponse<AuthResponse>.CreateSuccess(response, "Token refreshed successfully"));
+                }
+
+                return BadRequest(ApiResponse<object>.CreateError(result.Message));
             }
             catch (Exception ex)
             {
@@ -301,6 +317,14 @@ namespace Auth.API.Controllers.V1
         private string GetClientIpAddress()
         {
             return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        }
+
+        /// <summary>
+        /// Get user agent from request headers
+        /// </summary>
+        private string GetUserAgent()
+        {
+            return HttpContext.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
         }
 
         #endregion

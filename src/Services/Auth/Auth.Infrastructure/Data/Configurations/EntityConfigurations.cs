@@ -230,7 +230,7 @@ namespace Auth.Infrastructure.Data.Configurations
                 .HasMaxLength(1000);
 
             builder.Property(s => s.RefreshToken)
-                .HasMaxLength(500);
+                .HasMaxLength(250); // Réduit pour MySQL index key length
 
             builder.Property(s => s.IpAddress)
                 .HasMaxLength(45);
@@ -245,6 +245,7 @@ namespace Auth.Infrastructure.Data.Configurations
             builder.HasIndex(s => s.DeviceId)
                 .HasDatabaseName("IX_UserSessions_DeviceId");
 
+            // Index sur RefreshToken avec préfixe pour MySQL
             builder.HasIndex(s => s.RefreshToken)
                 .HasDatabaseName("IX_UserSessions_RefreshToken");
 

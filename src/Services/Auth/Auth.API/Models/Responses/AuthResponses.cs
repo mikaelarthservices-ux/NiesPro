@@ -26,6 +26,11 @@ namespace Auth.API.Models.Responses
         public int ExpiresIn { get; set; }
 
         /// <summary>
+        /// Token expiration date and time (UTC)
+        /// </summary>
+        public DateTime ExpiresAt { get; set; }
+
+        /// <summary>
         /// Authenticated user information
         /// </summary>
         public UserInfo User { get; set; } = new();
