@@ -17,9 +17,10 @@ public static class ServiceCollectionExtensions
     {
         // Configuration de la base de données
         services.AddDbContext<AuthDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName)));
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21)));
+        });
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();

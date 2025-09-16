@@ -110,7 +110,8 @@ public sealed class OrderDbContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             // Configuration par défaut pour le développement
-            optionsBuilder.UseSqlServer("Server=localhost;Database=NiesPro_OrderDb;Trusted_Connection=true;TrustServerCertificate=true;");
+            optionsBuilder.UseMySql("Server=localhost;Port=3306;Database=NiesPro_Order;Uid=root;Pwd=;",
+                new MySqlServerVersion(new Version(8, 0, 21)));
         }
 
         // Configurations de performance

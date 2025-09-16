@@ -24,15 +24,12 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<OrderDbContext>(options =>
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorNumbersToAdd: null);
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly("Order.Infrastructure");
-            });
+            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21)),
+                mysqlOptions =>
+                {
+                    mysqlOptions.CommandTimeout(30);
+                    mysqlOptions.MigrationsAssembly("Order.Infrastructure");
+                });
 
             // Configuration de performance pour la production
             options.EnableSensitiveDataLogging(false);

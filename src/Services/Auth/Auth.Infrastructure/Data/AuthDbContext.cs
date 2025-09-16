@@ -46,9 +46,9 @@ namespace Auth.Infrastructure.Data
             if (!optionsBuilder.IsConfigured)
             {
                 // Default configuration for development
-                optionsBuilder.UseSqlServer(
-                    "Server=(localdb)\\mssqllocaldb;Database=NiesPro_Auth;Trusted_Connection=true;MultipleActiveResultSets=true",
-                    options => options.EnableRetryOnFailure()
+                optionsBuilder.UseMySql(
+                    "Server=localhost;Port=3306;Database=NiesPro_Auth;Uid=root;Pwd=;",
+                    ServerVersion.AutoDetect("Server=localhost;Port=3306;Database=NiesPro_Auth;Uid=root;Pwd=;")
                 );
             }
 

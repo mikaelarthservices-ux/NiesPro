@@ -21,9 +21,9 @@ public static class ServiceCollectionExtensions
         // Base de données
         services.AddDbContext<OrderDbContext>(options =>
         {
-            options.UseSqlServer(
+            options.UseMySql(
                 configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(OrderDbContext).Assembly.FullName));
+                new MySqlServerVersion(new Version(8, 0, 21)));
             
             options.EnableSensitiveDataLogging(false);
             options.EnableServiceProviderCaching();

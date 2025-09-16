@@ -18,9 +18,9 @@ namespace Catalog.Infrastructure.Extensions
         {
             // Configuration de la base de données
             services.AddDbContext<CatalogDbContext>(options =>
-                options.UseSqlServer(
+                options.UseMySql(
                     configuration.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly(typeof(CatalogDbContext).Assembly.FullName)));
+                    new MySqlServerVersion(new Version(8, 0, 21))));
 
             // Repositories
             services.AddScoped<IProductRepository, ProductRepository>();
