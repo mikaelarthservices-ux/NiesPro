@@ -22,7 +22,7 @@ function Start-Service {
     
     $scriptBlock = {
         param($Name, $Port, $ProjectPath)
-        $Host.UI.RawUI.WindowTitle = "NiesPro $Name (Port $Port)"
+        $Host.UI.RawUI.WindowTitle = "NiesPro $($Name) (Port $($Port))"
         Set-Location $ProjectPath
         Write-Host "Building $Name..." -ForegroundColor Yellow
         dotnet build

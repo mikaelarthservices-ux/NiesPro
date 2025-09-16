@@ -16,6 +16,10 @@ builder.Services.AddApplicationServices();
 // Add infrastructure services
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+
 // Add CORS
 builder.Services.AddCors(options =>
 {
@@ -43,5 +47,8 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map Health Checks
+app.MapHealthChecks("/health");
 
 app.Run();

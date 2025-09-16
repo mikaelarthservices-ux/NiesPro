@@ -1,0 +1,203 @@
+<Window x:Class="NiesPro.ServiceManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="NiesPro Service Manager" 
+        Height="800" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="200"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16" 
+                                  materialDesign:ShadowAssist.ShadowDepth="Depth2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Settings" Height="32" Width="32" 
+                                           VerticalAlignment="Center" Margin="0,0,16,0"/>
+                    <StackPanel>
+                        <TextBlock Text="NiesPro Service Manager" 
+                                 Style="{DynamicResource MaterialDesignHeadline5TextBlock}"
+                                 Foreground="White"/>
+                        <TextBlock Text="Contrôle centralisé des microservices" 
+                                 Style="{DynamicResource MaterialDesignBody2TextBlock}"
+                                 Foreground="White" Opacity="0.8"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Name="StartAllButton" Content="🚀 Démarrer Tout" 
+                            Style="{DynamicResource MaterialDesignRaisedButton}"
+                            Margin="8,0" Click="StartAllButton_Click"/>
+                    <Button Name="StopAllButton" Content="🛑 Arrêter Tout" 
+                            Style="{DynamicResource MaterialDesignRaisedButton}"
+                            Margin="8,0" Click="StopAllButton_Click"/>
+                    <Button Name="CleanupButton" Content="🧹 Nettoyer" 
+                            Style="{DynamicResource MaterialDesignRaisedButton}"
+                            Margin="8,0" Click="CleanupButton_Click"/>
+                    <Button Name="RefreshButton" Content="🔄 Actualiser" 
+                            Style="{DynamicResource MaterialDesignRaisedButton}"
+                            Margin="8,0" Click="RefreshButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </materialDesign:ColorZone>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource MaterialDesignChipBackground}" 
+                Padding="16,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="État général: " FontWeight="Bold"/>
+                <TextBlock Name="OverallStatusText" Text="Prêt" Foreground="Orange"/>
+                <Separator Style="{DynamicResource {x:Static ToolBar.SeparatorStyleKey}}" 
+                          Margin="16,0"/>
+                <TextBlock Text="Services actifs: " FontWeight="Bold"/>
+                <TextBlock Name="ActiveServicesText" Text="0/4" Foreground="Blue"/>
+                <Separator Style="{DynamicResource {x:Static ToolBar.SeparatorStyleKey}}" 
+                          Margin="16,0"/>
+                <TextBlock Text="Dernière mise à jour: " FontWeight="Bold"/>
+                <TextBlock Name="LastUpdateText" Text="Jamais"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Services Grid -->
+        <ScrollViewer Grid.Row="2" Margin="16">
+            <ItemsControl Name="ServicesItemsControl">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <materialDesign:Card Margin="8" Padding="16" 
+                                           materialDesign:ShadowAssist.ShadowDepth="Depth2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Service Icon & Info -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" 
+                                          VerticalAlignment="Center" Margin="0,0,16,0">
+                                    <TextBlock Text="{Binding Icon}" FontSize="24" 
+                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DisplayName}" 
+                                                 Style="{DynamicResource MaterialDesignSubtitle1TextBlock}"/>
+                                        <TextBlock Text="{Binding Description}" 
+                                                 Style="{DynamicResource MaterialDesignBody2TextBlock}"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding BaseUrl}" 
+                                                 Style="{DynamicResource MaterialDesignCaptionTextBlock}"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Status -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="État: " FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Status}" Name="StatusText"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="PID: " FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding ProcessId}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Santé: " FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding IsHealthy}" Name="HealthText"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Controls -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" 
+                                          VerticalAlignment="Center" Margin="16,0">
+                                    <Button Content="▶️ Start" Margin="4" 
+                                          Style="{DynamicResource MaterialDesignRaisedButton}"
+                                          Click="StartService_Click" Tag="{Binding Name}"/>
+                                    <Button Content="⏹️ Stop" Margin="4" 
+                                          Style="{DynamicResource MaterialDesignRaisedButton}"
+                                          Click="StopService_Click" Tag="{Binding Name}"/>
+                                </StackPanel>
+
+                                <!-- Quick Links -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" 
+                                          VerticalAlignment="Center" Margin="16,0">
+                                    <Button Content="🏥 Health" Margin="4" 
+                                          Style="{DynamicResource MaterialDesignOutlinedButton}"
+                                          Click="OpenHealth_Click" Tag="{Binding HealthCheckUrl}"/>
+                                    <Button Content="📖 Swagger" Margin="4" 
+                                          Style="{DynamicResource MaterialDesignOutlinedButton}"
+                                          Click="OpenSwagger_Click" Tag="{Binding SwaggerUrl}"/>
+                                </StackPanel>
+
+                                <!-- Status Indicator -->
+                                <Border Grid.Column="4" Width="12" Height="12" 
+                                      CornerRadius="6" VerticalAlignment="Center" Margin="8,0">
+                                    <Border.Background>
+                                        <SolidColorBrush x:Name="StatusIndicator" Color="Gray"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </materialDesign:Card>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Logs Panel -->
+        <materialDesign:Card Grid.Row="3" Margin="16,0,16,16" 
+                           materialDesign:ShadowAssist.ShadowDepth="Depth2">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryLight" Padding="12">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Console" VerticalAlignment="Center" 
+                                               Margin="0,0,8,0"/>
+                        <TextBlock Text="Logs en temps réel" 
+                                 Style="{DynamicResource MaterialDesignSubtitle1TextBlock}"/>
+                        <ComboBox Name="LogServiceComboBox" Margin="16,0,0,0" 
+                                MinWidth="150" SelectionChanged="LogServiceComboBox_SelectionChanged"/>
+                        <Button Content="🧹 Effacer" Margin="16,0,0,0" 
+                              Style="{DynamicResource MaterialDesignOutlinedButton}"
+                              Click="ClearLogs_Click"/>
+                    </StackPanel>
+                </materialDesign:ColorZone>
+
+                <ScrollViewer Grid.Row="1" Name="LogScrollViewer" 
+                            VerticalScrollBarVisibility="Auto">
+                    <TextBox Name="LogTextBox" 
+                           IsReadOnly="True" 
+                           Background="Black" 
+                           Foreground="Lime" 
+                           FontFamily="Consolas" 
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Padding="8"
+                           Text="Service Manager prêt. Sélectionnez un service pour voir ses logs..."/>
+                </ScrollViewer>
+            </Grid>
+        </materialDesign:Card>
+    </Grid>
+</Window>
