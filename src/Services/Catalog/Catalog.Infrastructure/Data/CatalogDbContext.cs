@@ -126,7 +126,7 @@ namespace Catalog.Infrastructure.Data
             {
                 entity.HasKey(r => r.Id);
                 entity.Property(r => r.CustomerName).IsRequired().HasMaxLength(100);
-                entity.Property(r => r.CustomerEmail).HasMaxLength(255);
+                entity.Property(r => r.CustomerEmail).HasMaxLength(191); // Max pour index MySQL utf8mb4
                 entity.Property(r => r.Title).IsRequired().HasMaxLength(100);
                 entity.Property(r => r.Comment).HasMaxLength(2000);
                 entity.Property(r => r.ApprovedBy).HasMaxLength(100);
