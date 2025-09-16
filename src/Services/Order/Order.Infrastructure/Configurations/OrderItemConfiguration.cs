@@ -45,7 +45,7 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         // Propriétés de suivi
         builder.Property(oi => oi.AddedAt)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
         builder.Property(oi => oi.LastModifiedAt);
 
@@ -59,12 +59,12 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         // Propriétés calculées ignorées
         builder.Ignore(oi => oi.TotalPrice);
 
-        // Contraintes
-        builder.ToTable(t => 
-        {
-            t.HasCheckConstraint("CK_OrderItems_Quantity", "Quantity > 0");
-            t.HasCheckConstraint("CK_OrderItems_UnitPrice", "UnitPriceAmount > 0");
-        });
+        // TODO: Contraintes Check non supportées sur Value Objects MySQL
+        // builder.ToTable(t => 
+        // {
+        //     t.HasCheckConstraint("CK_OrderItems_Quantity", "Quantity > 0");
+        //     t.HasCheckConstraint("CK_OrderItems_UnitPrice", "UnitPriceAmount > 0");
+        // });
     }
 }
 
@@ -128,7 +128,7 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         // Propriétés de suivi
         builder.Property(p => p.CreatedAt)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
         builder.Property(p => p.ProcessedAt);
         builder.Property(p => p.FailedAt);
@@ -145,11 +145,11 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasIndex(p => p.CreatedAt)
             .HasDatabaseName("IX_Payments_CreatedAt");
 
-        // Contraintes
-        builder.ToTable(t => 
-        {
-            t.HasCheckConstraint("CK_Payments_Amount", "Amount > 0");
-            t.HasCheckConstraint("CK_Payments_RefundedAmount", "RefundedAmount >= 0");
-        });
+        // TODO: Contraintes Check non supportées sur Value Objects MySQL
+        // builder.ToTable(t => 
+        // {
+        //     t.HasCheckConstraint("CK_Payments_Amount", "Amount > 0");
+        //     t.HasCheckConstraint("CK_Payments_RefundedAmount", "RefundedAmount >= 0");
+        // });
     }
 }

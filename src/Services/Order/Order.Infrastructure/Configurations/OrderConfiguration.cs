@@ -153,7 +153,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Domain.Entitie
         // Propriétés de suivi
         builder.Property(o => o.CreatedAt)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
         builder.Property(o => o.ConfirmedAt);
         builder.Property(o => o.ShippedAt);

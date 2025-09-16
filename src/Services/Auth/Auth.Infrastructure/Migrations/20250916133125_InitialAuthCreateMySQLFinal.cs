@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Auth.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialAuthCreate : Migration
+    public partial class InitialAuthCreateMySQLFinal : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -63,7 +63,7 @@ namespace Auth.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     Username = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Email = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                    Email = table.Column<string>(type: "varchar(191)", maxLength: 191, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     PasswordHash = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -119,7 +119,7 @@ namespace Auth.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    DeviceKey = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                    DeviceKey = table.Column<string>(type: "varchar(191)", maxLength: 191, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     DeviceName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -239,7 +239,7 @@ namespace Auth.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IpAddress = table.Column<string>(type: "varchar(45)", maxLength: 45, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    UserAgent = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: true)
+                    UserAgent = table.Column<string>(type: "varchar(191)", maxLength: 191, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     LastActivityAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),

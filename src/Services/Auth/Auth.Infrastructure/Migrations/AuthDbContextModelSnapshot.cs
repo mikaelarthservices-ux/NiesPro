@@ -115,8 +115,8 @@ namespace Auth.Infrastructure.Migrations
 
                     b.Property<string>("DeviceKey")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<string>("DeviceName")
                         .IsRequired()
@@ -281,8 +281,8 @@ namespace Auth.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("tinyint(1)");
@@ -399,8 +399,8 @@ namespace Auth.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("UserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");

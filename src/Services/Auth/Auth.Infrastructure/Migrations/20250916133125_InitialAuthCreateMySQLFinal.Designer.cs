@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Auth.Infrastructure.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    [Migration("20250916125614_InitialAuthCreate")]
-    partial class InitialAuthCreate
+    [Migration("20250916133125_InitialAuthCreateMySQLFinal")]
+    partial class InitialAuthCreateMySQLFinal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -118,8 +118,8 @@ namespace Auth.Infrastructure.Migrations
 
                     b.Property<string>("DeviceKey")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<string>("DeviceName")
                         .IsRequired()
@@ -284,8 +284,8 @@ namespace Auth.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("tinyint(1)");
@@ -402,8 +402,8 @@ namespace Auth.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("UserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");

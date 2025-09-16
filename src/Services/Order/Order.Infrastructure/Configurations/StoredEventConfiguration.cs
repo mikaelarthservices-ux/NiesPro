@@ -28,17 +28,17 @@ public sealed class StoredEventConfiguration : IEntityTypeConfiguration<StoredEv
 
         builder.Property(e => e.EventData)
             .IsRequired()
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("LONGTEXT");
 
         builder.Property(e => e.Metadata)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("LONGTEXT");
 
         builder.Property(e => e.Version)
             .IsRequired();
 
         builder.Property(e => e.Timestamp)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
         builder.Property(e => e.CorrelationId)
             .HasMaxLength(100);

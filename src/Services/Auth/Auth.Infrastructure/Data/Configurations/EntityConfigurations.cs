@@ -19,7 +19,7 @@ namespace Auth.Infrastructure.Data.Configurations
 
             builder.Property(u => u.Email)
                 .IsRequired()
-                .HasMaxLength(255);
+                .HasMaxLength(191); // Max pour index MySQL utf8mb4: 767/4 = 191
 
             builder.Property(u => u.PasswordHash)
                 .IsRequired()
@@ -177,7 +177,7 @@ namespace Auth.Infrastructure.Data.Configurations
 
             builder.Property(d => d.DeviceKey)
                 .IsRequired()
-                .HasMaxLength(255);
+                .HasMaxLength(191); // Max pour index MySQL utf8mb4
 
             builder.Property(d => d.DeviceName)
                 .IsRequired()
@@ -236,7 +236,7 @@ namespace Auth.Infrastructure.Data.Configurations
                 .HasMaxLength(45);
 
             builder.Property(s => s.UserAgent)
-                .HasMaxLength(500);
+                .HasMaxLength(191); // Max pour index MySQL utf8mb4
 
             // Indexes
             builder.HasIndex(s => s.UserId)
