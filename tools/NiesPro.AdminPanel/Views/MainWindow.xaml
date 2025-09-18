@@ -1,0 +1,329 @@
+<Window x:Class="NiesPro.AdminPanel.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:viewModels="clr-namespace:NiesPro.AdminPanel.ViewModels"
+        Title="NiesPro Administration Panel" 
+        Height="900" Width="1400"
+        MinHeight="700" MinWidth="1200"
+        WindowStartupLocation="CenterScreen"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+
+    <materialDesign:DialogHost Identifier="RootDialog">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Height="80">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="24,0">
+                        <TextBlock Text="NiesPro Administration Panel" 
+                                   FontSize="24" FontWeight="Medium" 
+                                   Foreground="White"/>
+                        <TextBlock Text="Tableau de bord des microservices" 
+                                   FontSize="14" Opacity="0.8"
+                                   Foreground="White"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                                VerticalAlignment="Center" Margin="0,0,24,0">
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                                ToolTip="Actualiser"
+                                Command="{Binding RefreshCommand}"
+                                Margin="8,0">
+                            <materialDesign:PackIcon Kind="Refresh" 
+                                                     Foreground="White" Height="24" Width="24"/>
+                        </Button>
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                                ToolTip="Paramètres"
+                                Margin="8,0">
+                            <materialDesign:PackIcon Kind="Settings" 
+                                                     Foreground="White" Height="24" Width="24"/>
+                        </Button>
+                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" 
+                                   Margin="16,0"/>
+                        <TextBlock Text="{Binding CurrentUser, StringFormat='Utilisateur: {0}'}"
+                                   VerticalAlignment="Center" Margin="16,0"
+                                   Foreground="White" FontWeight="Medium"/>
+                    </StackPanel>
+                </Grid>
+            </materialDesign:ColorZone>
+
+            <!-- Main Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Statistics Cards -->
+                    <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,20">
+                        <!-- Users Card -->
+                        <materialDesign:Card Style="{StaticResource ModernCard}"
+                                             Background="#FF2196F3">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountGroup" 
+                                                             Width="32" Height="32"
+                                                             Foreground="White"
+                                                             VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardViewModel.TotalUsers}" 
+                                               Style="{StaticResource StatCardNumber}"
+                                               Foreground="White"
+                                               Margin="16,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="Utilisateurs" 
+                                           Style="{StaticResource StatCardLabel}"
+                                           Foreground="White" Opacity="0.9"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <!-- Orders Card -->
+                        <materialDesign:Card Style="{StaticResource ModernCard}"
+                                             Background="#FF009688">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ShoppingCart" 
+                                                             Width="32" Height="32"
+                                                             Foreground="White"
+                                                             VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardViewModel.TotalOrders}" 
+                                               Style="{StaticResource StatCardNumber}"
+                                               Foreground="White"
+                                               Margin="16,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="Commandes" 
+                                           Style="{StaticResource StatCardLabel}"
+                                           Foreground="White" Opacity="0.9"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <!-- Products Card -->
+                        <materialDesign:Card Style="{StaticResource ModernCard}"
+                                             Background="#FF4CAF50">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Package" 
+                                                             Width="32" Height="32"
+                                                             Foreground="White"
+                                                             VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardViewModel.TotalProducts}" 
+                                               Style="{StaticResource StatCardNumber}"
+                                               Foreground="White"
+                                               Margin="16,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="Produits" 
+                                           Style="{StaticResource StatCardLabel}"
+                                           Foreground="White" Opacity="0.9"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <!-- Revenue Card -->
+                        <materialDesign:Card Style="{StaticResource ModernCard}"
+                                             Background="#FFFF9800">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CurrencyEur" 
+                                                             Width="32" Height="32"
+                                                             Foreground="White"
+                                                             VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardViewModel.DailyRevenueText}" 
+                                               Style="{StaticResource StatCardNumber}"
+                                               Foreground="White"
+                                               FontSize="24"
+                                               Margin="16,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="CA du jour" 
+                                           Style="{StaticResource StatCardLabel}"
+                                           Foreground="White" Opacity="0.9"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                    </UniformGrid>
+
+                    <!-- Services Status -->
+                    <materialDesign:Card Grid.Row="1" Style="{StaticResource ModernCard}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                <materialDesign:PackIcon Kind="Server" 
+                                                         Width="24" Height="24"
+                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="État des Services" 
+                                           FontSize="20" FontWeight="Medium"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Command="{Binding DashboardViewModel.StartAllServicesCommand}"
+                                        ToolTip="Démarrer tous les services"
+                                        Margin="16,0,8,0"
+                                        Background="#FF4CAF50"
+                                        BorderBrush="#FF4CAF50">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Play" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Démarrer"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Command="{Binding DashboardViewModel.StopAllServicesCommand}"
+                                        ToolTip="Arrêter tous les services"
+                                        Margin="0,0,8,0"
+                                        Background="#FFF44336"
+                                        BorderBrush="#FFF44336">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Stop" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Arrêter"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Command="{Binding DashboardViewModel.RestartAllServicesCommand}"
+                                        ToolTip="Redémarrer tous les services"
+                                        Margin="0,0,8,0"
+                                        Background="#FFFF9800"
+                                        BorderBrush="#FFFF9800">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Restart" Margin="0,0,4,0"/>
+                                        <TextBlock Text="Redémarrer"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                        Command="{Binding DashboardViewModel.RefreshServicesCommand}"
+                                        ToolTip="Actualiser les services"
+                                        Margin="0,0,0,0">
+                                    <materialDesign:PackIcon Kind="Refresh"/>
+                                </Button>
+                                
+                                <!-- Indicateur de progression pour les opérations de service -->
+                                <StackPanel Orientation="Horizontal" 
+                                            Margin="16,0,0,0"
+                                            Visibility="{Binding DashboardViewModel.IsServiceOperationInProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ProgressBar IsIndeterminate="True" 
+                                                 Width="100" 
+                                                 Height="4"
+                                                 Margin="0,0,8,0"
+                                                 VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardViewModel.ServiceOperationStatus}"
+                                               VerticalAlignment="Center"
+                                               FontStyle="Italic"
+                                               Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <ItemsControl ItemsSource="{Binding DashboardViewModel.ServiceStatuses}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="5"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#FFF5F5F5" 
+                                                CornerRadius="8" 
+                                                Padding="16" 
+                                                Margin="8">
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal" 
+                                                            HorizontalAlignment="Center">
+                                                    <Ellipse Style="{StaticResource ServiceStatusIndicator}">
+                                                        <Ellipse.Fill>
+                                                            <SolidColorBrush Color="{Binding StatusColor}"/>
+                                                        </Ellipse.Fill>
+                                                    </Ellipse>
+                                                    <TextBlock Text="{Binding Name}" 
+                                                               FontWeight="Medium"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                
+                                                <!-- Status simplifié -->
+                                                <TextBlock Text="{Binding StatusText}" 
+                                                           HorizontalAlignment="Center"
+                                                           FontSize="12"
+                                                           Margin="0,4,0,0"
+                                                           Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                                <TextBlock Text="{Binding Port, StringFormat='Port: {0}'}" 
+                                                           HorizontalAlignment="Center"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <!-- Recent Activity -->
+                    <materialDesign:Card Grid.Row="2" Style="{StaticResource ModernCard}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                <materialDesign:PackIcon Kind="Timeline" 
+                                                         Width="24" Height="24"
+                                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="Activité Récente" 
+                                           FontSize="20" FontWeight="Medium"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            
+                            <ListBox ItemsSource="{Binding DashboardViewModel.RecentActivities}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     MaxHeight="300">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                                            <materialDesign:PackIcon Kind="Circle" 
+                                                                     Width="8" Height="8"
+                                                                     Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                                                     VerticalAlignment="Center"
+                                                                     Margin="0,0,12,0"/>
+                                            <TextBlock Text="{Binding}" 
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <!-- Loading Indicator -->
+                    <materialDesign:Card Grid.Row="3" 
+                                         Style="{StaticResource ModernCard}"
+                                         Visibility="{Binding DashboardViewModel.IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center" 
+                                    VerticalAlignment="Center"
+                                    Margin="0,40">
+                            <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                         Value="0"
+                                         IsIndeterminate="True"
+                                         Width="48" Height="48"/>
+                            <TextBlock Text="Chargement des données..." 
+                                       HorizontalAlignment="Center"
+                                       Margin="0,16,0,0"
+                                       FontSize="16"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </materialDesign:DialogHost>
+</Window>
