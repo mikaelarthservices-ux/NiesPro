@@ -1,4 +1,5 @@
 using Payment.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -211,6 +212,7 @@ public class Merchant : BaseEntity
     /// <summary>
     /// Code unique du marchand (pour compatibilité Infrastructure)
     /// </summary>
+    [NotMapped]
     public string Code => ApiKey.Length > 8 ? ApiKey.Substring(0, 8).ToUpper() : ApiKey.ToUpper();
 
     /// <summary>
@@ -226,11 +228,13 @@ public class Merchant : BaseEntity
     /// <summary>
     /// Email de support du marchand (pour compatibilité Infrastructure)
     /// </summary>
+    [NotMapped]
     public string? SupportEmail => Email;
 
     /// <summary>
     /// Téléphone de support du marchand (pour compatibilité Infrastructure)
     /// </summary>
+    [NotMapped]
     public string? SupportPhone => Phone;
 
     /// <summary>

@@ -1,5 +1,6 @@
 using Payment.Domain.Entities;
 using Payment.Domain.Enums;
+using Payment.Application.Handlers;
 using Microsoft.Extensions.Logging;
 using Payment.Application.Services;
 
@@ -15,6 +16,7 @@ public interface IThreeDSecureService
     Task<ThreeDSecureStatus> GetAuthenticationStatusAsync(string transactionId, CancellationToken cancellationToken = default);
     Task<bool> IsCardEligibleFor3DSecureAsync(string cardToken, CancellationToken cancellationToken = default);
     Task<ThreeDSecureValidationResult> ValidatePaResAsync(string paRes, CancellationToken cancellationToken = default);
+    // TODO: Ajouter ValidateAsync une fois les types alignés
 }
 
 /// <summary>

@@ -24,13 +24,18 @@ public interface IBaseRepository<T> where T : class
 public interface IPaymentRepository : IBaseRepository<Payment.Domain.Entities.Payment>
 {
     Task<Payment.Domain.Entities.Payment?> GetByPaymentNumberAsync(string paymentNumber, CancellationToken cancellationToken = default);
+    Task<Payment.Domain.Entities.Payment?> GetByNumberAsync(string paymentNumber, CancellationToken cancellationToken = default);
+    Task<Payment.Domain.Entities.Payment?> GetByReferenceAsync(string reference, CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
+    Task<(List<Payment.Domain.Entities.Payment> payments, int totalCount)> GetByCustomerIdPagedAsync(
+        Guid customerId, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByMerchantIdAsync(Guid merchantId, CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByOrderIdAsync(Guid orderId, CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByStatusAsync(PaymentStatus status, CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByDateRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default);
+    Task<List<Payment.Domain.Entities.Payment>> GetRecentByCustomerIdAsync(Guid customerId, TimeSpan timeSpan, CancellationToken cancellationToken = default);
     Task<decimal> GetTotalAmountByMerchantAsync(Guid merchantId, DateTime from, DateTime to, CancellationToken cancellationToken = default);
-    Task<List<Payment.Domain.Entities.Payment>> SearchAsync(
+    Task<(List<Payment.Domain.Entities.Payment> payments, int totalCount)> SearchAsync(
         string? searchTerm, Guid? merchantId = null, Guid? customerId = null, List<PaymentStatus>? statuses = null,
         DateTime? fromDate = null, DateTime? toDate = null, int pageNumber = 1, int pageSize = 10,
         CancellationToken cancellationToken = default);
@@ -44,11 +49,14 @@ public interface IPaymentRepository : IBaseRepository<Payment.Domain.Entities.Pa
 public interface ITransactionRepository : IBaseRepository<Transaction>
 {
     Task<Transaction?> GetByTransactionNumberAsync(string transactionNumber, CancellationToken cancellationToken = default);
+    Task<Transaction?> GetByIdWithDetailsAsync(Guid transactionId, CancellationToken cancellationToken = default);
     Task<List<Transaction>> GetByPaymentIdAsync(Guid paymentId, CancellationToken cancellationToken = default);
     Task<List<Transaction>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
     Task<List<Transaction>> GetByMerchantIdAsync(Guid merchantId, CancellationToken cancellationToken = default);
     Task<List<Transaction>> GetByStatusAsync(TransactionStatus status, CancellationToken cancellationToken = default);
     Task<List<Transaction>> GetByDateRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default);
+    Task<List<Transaction>> GetByPaymentMethodIdAsync(Guid paymentMethodId, CancellationToken cancellationToken = default);
+    Task<List<Transaction>> GetRecentByCustomerAsync(Guid customerId, DateTime since, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

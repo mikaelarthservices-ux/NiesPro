@@ -51,7 +51,7 @@ public class PaymentDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CardConfiguration());
         modelBuilder.ApplyConfiguration(new ThreeDSecureAuthenticationConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentRefundConfiguration());
-        modelBuilder.ApplyConfiguration(new MerchantConfigurationConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.MerchantEntityConfiguration());
 
         // Event Store configurations
         modelBuilder.ApplyConfiguration(new StoredEventConfiguration());
@@ -64,7 +64,7 @@ public class PaymentDbContext : DbContext
 
         // Configuration système
         modelBuilder.ApplyConfiguration(new PaymentProcessorConfigurationConfiguration());
-        modelBuilder.ApplyConfiguration(new MerchantConfigurationConfiguration());
+        modelBuilder.ApplyConfiguration(new MerchantConfigurationEntityConfiguration());
 
         // Index de performance pour les requêtes fréquentes
         ConfigurePerformanceIndexes(modelBuilder);
@@ -122,7 +122,7 @@ public class PaymentDbContext : DbContext
 
         // Index pour la détection de fraude
         modelBuilder.Entity<Transaction>()
-            .HasIndex(t => new { t.CustomerId, t.CreatedAt, t.Amount })
+            .HasIndex(t => new { t.CustomerId, t.CreatedAt, t.FraudScore })
             .HasDatabaseName("IX_Transactions_Fraud_Analysis");
 
         // Index pour l'audit et la sécurité
@@ -457,19 +457,4 @@ public class PaymentProcessorConfiguration
     public string ConfigurationJson { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-}
-
-public class MerchantConfiguration
-{
-    public Guid Id { get; set; }
-    public Guid MerchantId { get; set; }
-    public string ConfigurationKey { get; set; } = string.Empty;
-    public string ConfigurationValue { get; set; } = string.Empty;
-    public string? EncryptedValue { get; set; }
-    public bool IsEncrypted { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-
-    // Navigation
-    public Merchant Merchant { get; set; } = null!;
 }

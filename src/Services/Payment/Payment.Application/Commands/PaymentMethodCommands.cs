@@ -117,6 +117,15 @@ public class CreatePaymentMethodResult
     public Guid PaymentMethodId { get; set; }
 
     /// <summary>
+    /// Identifiant (alias pour compatibilité)
+    /// </summary>
+    public Guid Id 
+    { 
+        get => PaymentMethodId; 
+        set => PaymentMethodId = value; 
+    }
+
+    /// <summary>
     /// Type de moyen de paiement
     /// </summary>
     public PaymentMethodType Type { get; set; }
@@ -373,4 +382,46 @@ public class ValidatePaymentMethodResult
     /// Indication de succès de l'opération
     /// </summary>
     public bool IsSuccess { get; set; }
+}
+
+/// <summary>
+/// Commande pour supprimer un moyen de paiement
+/// </summary>
+public class DeletePaymentMethodCommand : IRequest<DeletePaymentMethodResult>
+{
+    /// <summary>
+    /// Identifiant du moyen de paiement à supprimer
+    /// </summary>
+    public Guid PaymentMethodId { get; set; }
+
+    /// <summary>
+    /// Identifiant du client propriétaire
+    /// </summary>
+    public Guid CustomerId { get; set; }
+
+    /// <summary>
+    /// Raison de la suppression
+    /// </summary>
+    public string? Reason { get; set; }
+}
+
+/// <summary>
+/// Résultat de suppression d'un moyen de paiement
+/// </summary>
+public class DeletePaymentMethodResult
+{
+    /// <summary>
+    /// Indication de succès
+    /// </summary>
+    public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// Message d'erreur
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Identifiant du moyen de paiement supprimé
+    /// </summary>
+    public Guid PaymentMethodId { get; set; }
 }

@@ -117,7 +117,7 @@ public class RequestLoggingMiddleware
 /// <summary>
 /// Filtre Swagger pour les schémas d'enum
 /// </summary>
-public class EnumSchemaFilter : Microsoft.OpenApi.Models.ISchemaFilter
+public class EnumSchemaFilter : Swashbuckle.AspNetCore.SwaggerGen.ISchemaFilter
 {
     public void Apply(Microsoft.OpenApi.Models.OpenApiSchema schema, Swashbuckle.AspNetCore.SwaggerGen.SchemaFilterContext context)
     {

@@ -1,4 +1,5 @@
 using MediatR;
+using Payment.Application.DTOs;
 using Payment.Application.DTOs.FraudDetection;
 
 namespace Payment.Application.Queries.FraudDetection;

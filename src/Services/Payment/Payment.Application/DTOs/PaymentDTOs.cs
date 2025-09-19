@@ -366,6 +366,11 @@ public class TransactionSummaryDto
     public TransactionType Type { get; set; }
 
     /// <summary>
+    /// Identifiant du client
+    /// </summary>
+    public Guid CustomerId { get; set; }
+
+    /// <summary>
     /// Date de création
     /// </summary>
     public DateTime CreatedAt { get; set; }
@@ -507,6 +512,11 @@ public class PaymentMethodDto
     /// Marque de carte (pour cartes)
     /// </summary>
     public string? CardBrand { get; set; }
+
+    /// <summary>
+    /// Identifiant du client propriétaire
+    /// </summary>
+    public Guid CustomerId { get; set; }
 }
 
 /// <summary>
@@ -712,4 +722,131 @@ public class PeriodStatsDto
     /// Taux de réussite
     /// </summary>
     public decimal SuccessRate { get; set; }
+}
+
+/// <summary>
+/// DTO simplifié pour les paiements (pour API publique)
+/// </summary>
+public class PaymentDto
+{
+    /// <summary>
+    /// Identifiant du paiement
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Numéro de paiement
+    /// </summary>
+    public string PaymentNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Montant du paiement
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// Devise
+    /// </summary>
+    public string Currency { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Statut du paiement
+    /// </summary>
+    public PaymentStatus Status { get; set; }
+
+    /// <summary>
+    /// Date de création
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Date de traitement
+    /// </summary>
+    public DateTime? ProcessedAt { get; set; }
+
+    /// <summary>
+    /// Identifiant de la commande
+    /// </summary>
+    public Guid OrderId { get; set; }
+
+    /// <summary>
+    /// Identifiant du client
+    /// </summary>
+    public Guid CustomerId { get; set; }
+
+    /// <summary>
+    /// Identifiant du commerçant
+    /// </summary>
+    public Guid MerchantId { get; set; }
+}
+
+/// <summary>
+/// DTO simplifié pour les transactions (pour API publique)
+/// </summary>
+public class TransactionDto
+{
+    /// <summary>
+    /// Identifiant de la transaction
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Numéro de transaction
+    /// </summary>
+    public string TransactionNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Type de transaction
+    /// </summary>
+    public TransactionType Type { get; set; }
+
+    /// <summary>
+    /// Statut de la transaction
+    /// </summary>
+    public TransactionStatus Status { get; set; }
+
+    /// <summary>
+    /// Montant de la transaction
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// Devise
+    /// </summary>
+    public string Currency { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Date de création
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Date de traitement
+    /// </summary>
+    public DateTime? ProcessedAt { get; set; }
+
+    /// <summary>
+    /// Identifiant du paiement parent
+    /// </summary>
+    public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Identifiant du client
+    /// </summary>
+    public Guid CustomerId { get; set; }
+}
+
+/// <summary>
+/// DTO pour les statistiques de transactions
+/// </summary>
+public class TransactionStatsDto
+{
+    public int TotalTransactions { get; set; }
+    public decimal TotalAmount { get; set; }
+    public decimal AverageAmount { get; set; }
+    public int SuccessfulTransactions { get; set; }
+    public int FailedTransactions { get; set; }
+    public decimal SuccessRate { get; set; }
+    public Dictionary<string, int> TransactionsByStatus { get; set; } = new();
+    public Dictionary<string, decimal> AmountByStatus { get; set; } = new();
 }

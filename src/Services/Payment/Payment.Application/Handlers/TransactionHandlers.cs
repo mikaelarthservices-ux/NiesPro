@@ -8,9 +8,13 @@ using Payment.Domain.Entities;
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
 using Payment.Domain.Events;
+using Payment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using AdvancedPaymentProcessor = Payment.Application.Services.IPaymentProcessor;
 using AdvancedPaymentProcessorFactory = Payment.Application.Services.IPaymentProcessorFactory;
+using DomainITransactionRepository = Payment.Domain.Interfaces.ITransactionRepository;
+using DomainIPaymentRepository = Payment.Domain.Interfaces.IPaymentRepository;
+using DomainIPaymentMethodRepository = Payment.Domain.Interfaces.IPaymentMethodRepository;
 
 namespace Payment.Application.Handlers;
 
@@ -19,16 +23,16 @@ namespace Payment.Application.Handlers;
 /// </summary>
 public class CaptureTransactionHandler : IRequestHandler<CaptureTransactionCommand, CaptureTransactionResult>
 {
-    private readonly ITransactionRepository _transactionRepository;
-    private readonly IPaymentRepository _paymentRepository;
+    private readonly DomainITransactionRepository _transactionRepository;
+    private readonly DomainIPaymentRepository _paymentRepository;
     private readonly AdvancedPaymentProcessorFactory _paymentProcessorFactory;
     private readonly IMapper _mapper;
     private readonly IMediator _mediator;
     private readonly ILogger<CaptureTransactionHandler> _logger;
 
     public CaptureTransactionHandler(
-        ITransactionRepository transactionRepository,
-        IPaymentRepository paymentRepository,
+        DomainITransactionRepository transactionRepository,
+        DomainIPaymentRepository paymentRepository,
         AdvancedPaymentProcessorFactory paymentProcessorFactory,
         IMapper mapper,
         IMediator mediator,
@@ -154,14 +158,14 @@ public class CaptureTransactionHandler : IRequestHandler<CaptureTransactionComma
 /// </summary>
 public class RefundTransactionHandler : IRequestHandler<RefundTransactionCommand, RefundTransactionResult>
 {
-    private readonly ITransactionRepository _transactionRepository;
+    private readonly DomainITransactionRepository _transactionRepository;
     private readonly AdvancedPaymentProcessorFactory _paymentProcessorFactory;
     private readonly IMapper _mapper;
     private readonly IMediator _mediator;
     private readonly ILogger<RefundTransactionHandler> _logger;
 
     public RefundTransactionHandler(
-        ITransactionRepository transactionRepository,
+        DomainITransactionRepository transactionRepository,
         AdvancedPaymentProcessorFactory paymentProcessorFactory,
         IMapper mapper,
         IMediator mediator,
@@ -277,14 +281,14 @@ public class RefundTransactionHandler : IRequestHandler<RefundTransactionCommand
 /// </summary>
 public class CreatePaymentMethodHandler : IRequestHandler<CreatePaymentMethodCommand, CreatePaymentMethodResult>
 {
-    private readonly IPaymentMethodRepository _paymentMethodRepository;
+    private readonly DomainIPaymentMethodRepository _paymentMethodRepository;
     private readonly ICardTokenizationService _cardTokenizationService;
     private readonly IMapper _mapper;
     private readonly IMediator _mediator;
     private readonly ILogger<CreatePaymentMethodHandler> _logger;
 
     public CreatePaymentMethodHandler(
-        IPaymentMethodRepository paymentMethodRepository,
+        DomainIPaymentMethodRepository paymentMethodRepository,
         ICardTokenizationService cardTokenizationService,
         IMapper mapper,
         IMediator mediator,
@@ -311,13 +315,17 @@ public class CreatePaymentMethodHandler : IRequestHandler<CreatePaymentMethodCom
             {
                 // Tokeniser la carte de crédit
                 var tokenizationResult = await _cardTokenizationService.TokenizeCardAsync(
-                    request.CreditCard.Number, 
-                    request.CreditCard.ExpiryMonth, 
-                    request.CreditCard.ExpiryYear,
-                    request.CreditCard.HolderName,
+                    new CardTokenizationRequest
+                    {
+                        CardNumber = request.CreditCard.Number,
+                        ExpiryMonth = request.CreditCard.ExpiryMonth,
+                        ExpiryYear = request.CreditCard.ExpiryYear,
+                        CardholderName = request.CreditCard.HolderName,
+                        CustomerId = request.CustomerId
+                    },
                     cancellationToken);
 
-                if (!tokenizationResult.IsSuccess)
+                if (!tokenizationResult.Success)
                 {
                     return new CreatePaymentMethodResult
                     {
@@ -427,12 +435,12 @@ public class CreatePaymentMethodHandler : IRequestHandler<CreatePaymentMethodCom
 /// </summary>
 public class SetDefaultPaymentMethodHandler : IRequestHandler<SetDefaultPaymentMethodCommand, SetDefaultPaymentMethodResult>
 {
-    private readonly IPaymentMethodRepository _paymentMethodRepository;
+    private readonly DomainIPaymentMethodRepository _paymentMethodRepository;
     private readonly IMediator _mediator;
     private readonly ILogger<SetDefaultPaymentMethodHandler> _logger;
 
     public SetDefaultPaymentMethodHandler(
-        IPaymentMethodRepository paymentMethodRepository,
+        DomainIPaymentMethodRepository paymentMethodRepository,
         IMediator mediator,
         ILogger<SetDefaultPaymentMethodHandler> logger)
     {
@@ -525,12 +533,6 @@ public class SetDefaultPaymentMethodHandler : IRequestHandler<SetDefaultPaymentM
             };
         }
     }
-}
-
-// Interfaces additionnelles
-public interface ICardTokenizationService
-{
-    Task<CardTokenizationResult> TokenizeCardAsync(string cardNumber, int expiryMonth, int expiryYear, string holderName, CancellationToken cancellationToken = default);
 }
 
 // DTOs additionnels

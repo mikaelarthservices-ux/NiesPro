@@ -132,15 +132,15 @@ public class PaymentsController : ControllerBase
     /// <param name="cancellationToken">Token d'annulation</param>
     /// <returns>Détails du paiement</returns>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaymentDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PaymentDto>> GetPayment(
+    public async Task<ActionResult<PaymentDetailDto>> GetPayment(
         Guid id,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var query = new GetPaymentByIdQuery { PaymentId = id };
+            var query = new GetPaymentByIdQuery(id);
             var result = await _mediator.Send(query, cancellationToken);
 
             if (result == null)
@@ -184,9 +184,8 @@ public class PaymentsController : ControllerBase
             if (!await CanAccessCustomerData(customerId))
                 return Forbid();
 
-            var query = new GetPaymentsByCustomerQuery
+            var query = new GetPaymentsByCustomerQuery(customerId)
             {
-                CustomerId = customerId,
                 Page = page,
                 PageSize = Math.Min(pageSize, 100) // Limiter la taille de page
             };
@@ -260,12 +259,10 @@ public class PaymentsController : ControllerBase
             if (!User.IsInRole("Admin") && GetMerchantId() != merchantId)
                 return Forbid();
 
-            var query = new GetMerchantPaymentStatsQuery
-            {
-                MerchantId = merchantId,
-                FromDate = from ?? DateTime.UtcNow.AddDays(-30),
-                ToDate = to ?? DateTime.UtcNow
-            };
+            var query = new GetMerchantPaymentStatsQuery(
+                merchantId,
+                from ?? DateTime.UtcNow.AddDays(-30),
+                to ?? DateTime.UtcNow);
 
             var result = await _mediator.Send(query, cancellationToken);
             return Ok(result);
@@ -337,9 +334,12 @@ public class PaymentsController : ControllerBase
         return HttpContext.Session?.Id;
     }
 
-    private string? GetUserId()
+    private Guid? GetUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdString, out var userId))
+            return userId;
+        return null;
     }
 
     private Guid? GetMerchantId()
@@ -365,7 +365,30 @@ public class PaymentsController : ControllerBase
         if (User.IsInRole("Customer"))
         {
             var userId = GetUserId();
-            return payment.CustomerId.ToString() == userId;
+            return payment.CustomerId == userId;
+        }
+
+        return false;
+    }
+
+    private async Task<bool> CanAccessPayment(PaymentDetailDto payment)
+    {
+        // Admin peut accéder à tous les paiements
+        if (User.IsInRole("Admin"))
+            return true;
+
+        // Marchand peut accéder à ses paiements
+        if (User.IsInRole("Merchant"))
+        {
+            var merchantId = GetMerchantId();
+            return merchantId.HasValue && payment.MerchantId == merchantId.Value;
+        }
+
+        // Client peut accéder à ses propres paiements
+        if (User.IsInRole("Customer"))
+        {
+            var userId = GetUserId();
+            return payment.CustomerId == userId;
         }
 
         return false;
@@ -381,7 +404,7 @@ public class PaymentsController : ControllerBase
         if (User.IsInRole("Customer"))
         {
             var userId = GetUserId();
-            return customerId.ToString() == userId;
+            return customerId == userId;
         }
 
         // Marchand peut accéder aux données de ses clients (à implémenter selon les besoins)

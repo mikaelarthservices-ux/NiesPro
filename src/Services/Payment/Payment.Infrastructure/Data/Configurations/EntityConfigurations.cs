@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Payment.Domain.Entities;
+using System.Text.Json;
 
 namespace Payment.Infrastructure.Data.Configurations;
 
@@ -68,7 +70,12 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Domain.Entities.Pay
             .HasConversion(
                 metadata => System.Text.Json.JsonSerializer.Serialize(metadata, (System.Text.Json.JsonSerializerOptions?)null),
                 json => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
-            );
+            )
+            .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => new Dictionary<string, string>(c)
+            ));
 
         // URLs
         builder.Property(p => p.ReturnUrl)
@@ -100,6 +107,16 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Domain.Entities.Pay
 
         builder.Property(p => p.UserAgent)
             .HasMaxLength(2000);
+
+        // Ignorer les propriétés calculées
+        builder.Ignore(p => p.PaymentNumber);
+        builder.Ignore(p => p.ProcessingFees);
+        builder.Ignore(p => p.FeeMode);
+        builder.Ignore(p => p.MinimumPartialAmount);
+        builder.Ignore(p => p.LastPaymentMethod);
+        builder.Ignore(p => p.Transactions);
+        builder.Ignore(p => p.SessionData);
+        builder.Ignore(p => p.AllowPartialPayments);
 
         // Relations
         builder.HasOne(p => p.Merchant)
@@ -188,7 +205,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
                 .HasMaxLength(3);
         });
 
-        builder.OwnsOne(t => t.Fee, money =>
+        builder.OwnsOne(t => t.Fees, money =>
         {
             money.Property(m => m.Amount)
                 .HasColumnName("FeeAmount")
@@ -202,6 +219,15 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
                 .HasMaxLength(3);
         });
 
+        // Ignorer la propriété calculée Fee
+        builder.Ignore(t => t.Fee);
+        
+        // Ignorer la propriété calculée IpAddress (alias vers ClientIpAddress)
+        builder.Ignore(t => t.IpAddress);
+
+        // Ignorer la propriété calculée DomainEvents
+        builder.Ignore(t => t.DomainEvents);
+
         // Identifiants externes
         builder.Property(t => t.ProcessorTransactionId)
             .HasMaxLength(100);
@@ -211,6 +237,38 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 
         builder.Property(t => t.AuthorizationCode)
             .HasMaxLength(50);
+
+        builder.Property(t => t.ExternalReference)
+            .HasMaxLength(100);
+
+        builder.Property(t => t.TransactionNumber)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        // Propriétés de refus et erreur
+        builder.Property(t => t.DeclineReason)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        builder.Property(t => t.ErrorMessage)
+            .HasMaxLength(1000);
+
+        // Propriétés de contexte client
+        builder.Property(t => t.ClientIpAddress)
+            .HasMaxLength(45);
+
+        builder.Property(t => t.ClientUserAgent)
+            .HasMaxLength(2000);
+
+        // Propriétés de conversion de devise
+        builder.Property(t => t.ExchangeRate)
+            .HasPrecision(18, 8);
+
+        builder.Property(t => t.OriginalCurrency)
+            .HasMaxLength(3);
+
+        // Propriétés temporelles supplémentaires
+        builder.Property(t => t.AuthorizationExpiresAt);
 
         // Détails de la transaction
         builder.Property(t => t.Description)
@@ -223,9 +281,6 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasMaxLength(1000);
 
         // Données de géolocalisation et contexte
-        builder.Property(t => t.IpAddress)
-            .HasMaxLength(45);
-
         builder.Property(t => t.GeoLocation)
             .HasMaxLength(200);
 
@@ -243,6 +298,20 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(t => t.UpdatedAt);
 
         builder.Property(t => t.ProcessedAt);
+
+        // Configuration de la propriété Metadata (Dictionary<string, string>)
+        builder.Property(t => t.Metadata)
+            .HasConversion(
+                metadata => JsonSerializer.Serialize(metadata, (JsonSerializerOptions?)null),
+                json => JsonSerializer.Deserialize<Dictionary<string, string>>(json, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
+            )
+            .HasColumnName("Metadata")
+            .HasColumnType("nvarchar(max)")
+            .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => new Dictionary<string, string>(c)
+            ));
 
         // Relations
         builder.HasOne(t => t.Payment)
@@ -265,7 +334,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasIndex(t => new { t.PaymentId, t.Type })
             .HasDatabaseName("IX_Transactions_Payment_Type");
 
-        builder.HasIndex(t => new { t.IpAddress, t.CreatedAt })
+        builder.HasIndex(t => new { t.ClientIpAddress, t.CreatedAt })
             .HasDatabaseName("IX_Transactions_IP_Date");
 
         // Index pour détection de fraude
@@ -297,9 +366,12 @@ public class PaymentMethodConfiguration : IEntityTypeConfiguration<PaymentMethod
             .HasConversion<string>()
             .HasMaxLength(20);
 
-        builder.Property(pm => pm.Name)
+        builder.Property(pm => pm.DisplayName)
             .IsRequired()
             .HasMaxLength(100);
+
+        // Ignorer la propriété calculée Name
+        builder.Ignore(pm => pm.Name);
 
         builder.Property(pm => pm.IsDefault)
             .IsRequired()
@@ -317,6 +389,84 @@ public class PaymentMethodConfiguration : IEntityTypeConfiguration<PaymentMethod
         builder.Property(pm => pm.UpdatedAt);
 
         builder.Property(pm => pm.LastUsedAt);
+
+        // Configuration du Value Object CreditCard
+        builder.OwnsOne(pm => pm.CreditCard, creditCard =>
+        {
+            creditCard.Property(cc => cc.MaskedNumber)
+                .HasColumnName("CreditCard_MaskedNumber")
+                .HasMaxLength(20);
+
+            creditCard.Property(cc => cc.Last4Digits)
+                .HasColumnName("CreditCard_Last4Digits")
+                .HasMaxLength(4);
+
+            creditCard.Property(cc => cc.CardholderName)
+                .HasColumnName("CreditCard_CardholderName")
+                .HasMaxLength(100);
+
+            creditCard.Property(cc => cc.ExpiryMonth)
+                .HasColumnName("CreditCard_ExpiryMonth");
+
+            creditCard.Property(cc => cc.ExpiryYear)
+                .HasColumnName("CreditCard_ExpiryYear");
+
+            creditCard.Property(cc => cc.CardType)
+                .HasColumnName("CreditCard_CardType")
+                .HasMaxLength(20);
+
+            creditCard.Property(cc => cc.Brand)
+                .HasColumnName("CreditCard_Brand")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            creditCard.Property(cc => cc.Token)
+                .HasColumnName("CreditCard_Token")
+                .HasMaxLength(100);
+        });
+
+        // Configuration des limites Money (Value Objects optionnels)
+        builder.OwnsOne(pm => pm.DailyLimit, dailyLimit =>
+        {
+            dailyLimit.Property(dl => dl.Amount)
+                .HasColumnName("DailyLimit_Amount")
+                .HasPrecision(18, 4);
+
+            dailyLimit.Property(dl => dl.Currency)
+                .HasColumnName("DailyLimit_Currency")
+                .HasConversion(
+                    currency => currency.Code,
+                    code => Domain.ValueObjects.Currency.FromCode(code))
+                .HasMaxLength(3);
+        });
+
+        builder.OwnsOne(pm => pm.TransactionLimit, transactionLimit =>
+        {
+            transactionLimit.Property(tl => tl.Amount)
+                .HasColumnName("TransactionLimit_Amount")
+                .HasPrecision(18, 4);
+
+            transactionLimit.Property(tl => tl.Currency)
+                .HasColumnName("TransactionLimit_Currency")
+                .HasConversion(
+                    currency => currency.Code,
+                    code => Domain.ValueObjects.Currency.FromCode(code))
+                .HasMaxLength(3);
+        });
+
+        // Configuration de la propriété Metadata (Dictionary<string, string>)
+        builder.Property(pm => pm.Metadata)
+            .HasConversion(
+                metadata => System.Text.Json.JsonSerializer.Serialize(metadata, (JsonSerializerOptions?)null),
+                json => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
+            )
+            .HasColumnName("Metadata")
+            .HasColumnType("nvarchar(max)")
+            .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => new Dictionary<string, string>(c)
+            ));
 
         // Index pour performance
         builder.HasIndex(pm => new { pm.CustomerId, pm.IsDefault })
@@ -354,9 +504,12 @@ public class CardConfiguration : IEntityTypeConfiguration<Card>
             .HasConversion<string>()
             .HasMaxLength(20);
 
-        builder.Property(c => c.LastFourDigits)
+        builder.Property(c => c.Last4Digits)
             .IsRequired()
             .HasMaxLength(4);
+
+        // Ignorer la propriété calculée LastFourDigits (alias vers Last4Digits)
+        builder.Ignore(c => c.LastFourDigits);
 
         builder.Property(c => c.ExpiryMonth)
             .IsRequired();
@@ -520,9 +673,12 @@ public class PaymentRefundConfiguration : IEntityTypeConfiguration<PaymentRefund
         builder.Property(r => r.PaymentId)
             .IsRequired();
 
-        builder.Property(r => r.Reference)
+        builder.Property(r => r.RefundNumber)
             .IsRequired()
             .HasMaxLength(50);
+
+        // Ignorer la propriété calculée Reference
+        builder.Ignore(r => r.Reference);
 
         builder.Property(r => r.Reason)
             .HasMaxLength(500);
@@ -572,9 +728,9 @@ public class PaymentRefundConfiguration : IEntityTypeConfiguration<PaymentRefund
             .OnDelete(DeleteBehavior.Cascade);
 
         // Index pour performance
-        builder.HasIndex(r => r.Reference)
+        builder.HasIndex(r => r.RefundNumber)
             .IsUnique()
-            .HasDatabaseName("IX_Refunds_Reference");
+            .HasDatabaseName("IX_Refunds_RefundNumber");
 
         builder.HasIndex(r => new { r.PaymentId, r.Status })
             .HasDatabaseName("IX_Refunds_Payment_Status");
@@ -584,7 +740,7 @@ public class PaymentRefundConfiguration : IEntityTypeConfiguration<PaymentRefund
 /// <summary>
 /// Configuration Entity Framework pour l'entité Merchant
 /// </summary>
-public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
+public class MerchantEntityConfiguration : IEntityTypeConfiguration<Merchant>
 {
     public void Configure(EntityTypeBuilder<Merchant> builder)
     {
@@ -599,10 +755,6 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
         builder.Property(m => m.Name)
             .IsRequired()
             .HasMaxLength(200);
-
-        builder.Property(m => m.Code)
-            .IsRequired()
-            .HasMaxLength(50);
 
         builder.Property(m => m.Email)
             .IsRequired()
@@ -620,12 +772,6 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
         builder.Property(m => m.Website)
             .HasMaxLength(500);
 
-        builder.Property(m => m.SupportEmail)
-            .HasMaxLength(255);
-
-        builder.Property(m => m.SupportPhone)
-            .HasMaxLength(50);
-
         // Configuration de l'adresse (Value Object)
         // Configuration de l'adresse comme propriété simple
         builder.Property(m => m.Address)
@@ -638,7 +784,12 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
             .HasConversion(
                 metadata => System.Text.Json.JsonSerializer.Serialize(metadata, (System.Text.Json.JsonSerializerOptions?)null),
                 json => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
-            );
+            )
+            .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => new Dictionary<string, string>(c)
+            ));
 
         // Tracking temporel
         builder.Property(m => m.CreatedAt)
@@ -654,14 +805,66 @@ public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
             .OnDelete(DeleteBehavior.Cascade);
 
         // Index pour performance
-        builder.HasIndex(m => m.Code)
-            .IsUnique()
-            .HasDatabaseName("IX_Merchants_Code");
-
         builder.HasIndex(m => m.Email)
             .HasDatabaseName("IX_Merchants_Email");
 
         builder.HasIndex(m => m.Status)
             .HasDatabaseName("IX_Merchants_Status");
+    }
+}
+
+/// <summary>
+/// Configuration Entity Framework pour l'entité MerchantConfiguration
+/// </summary>
+public class MerchantConfigurationEntityConfiguration : IEntityTypeConfiguration<MerchantConfiguration>
+{
+    public void Configure(EntityTypeBuilder<MerchantConfiguration> builder)
+    {
+        // Table et clé primaire
+        builder.ToTable("MerchantConfigurations");
+        builder.HasKey(mc => mc.Id);
+
+        // Propriétés requises
+        builder.Property(mc => mc.Id)
+            .IsRequired();
+
+        builder.Property(mc => mc.MerchantId)
+            .IsRequired();
+
+        builder.Property(mc => mc.ConfigurationKey)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(mc => mc.ConfigurationValue)
+            .IsRequired()
+            .HasMaxLength(1000);
+
+        builder.Property(mc => mc.EncryptedValue)
+            .HasMaxLength(2000);
+
+        builder.Property(mc => mc.IsEncrypted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        // Tracking temporel
+        builder.Property(mc => mc.CreatedAt)
+            .IsRequired()
+            .HasDefaultValueSql("GETUTCDATE()");
+
+        builder.Property(mc => mc.UpdatedAt);
+
+        // Relation avec Merchant
+        builder.HasOne<Merchant>()
+            .WithMany()
+            .HasForeignKey(mc => mc.MerchantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Index pour performance
+        builder.HasIndex(mc => new { mc.MerchantId, mc.ConfigurationKey })
+            .IsUnique()
+            .HasDatabaseName("IX_MerchantConfigurations_Merchant_Key");
+
+        builder.HasIndex(mc => mc.MerchantId)
+            .HasDatabaseName("IX_MerchantConfigurations_Merchant");
     }
 }

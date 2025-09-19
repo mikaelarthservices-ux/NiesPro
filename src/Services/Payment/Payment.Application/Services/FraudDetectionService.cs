@@ -1,6 +1,7 @@
 using Payment.Domain.Entities;
 using Payment.Domain.Enums;
 using Payment.Domain.ValueObjects;
+using Payment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using Payment.Application.DTOs;
 
@@ -522,19 +523,4 @@ public class GeoLocation
     public string Region { get; set; } = string.Empty;
     public double Latitude { get; set; }
     public double Longitude { get; set; }
-}
-
-// Extensions pour les repositories
-public interface ITransactionRepository
-{
-    Task<List<Transaction>> GetRecentByCustomerAsync(Guid customerId, DateTime since, CancellationToken cancellationToken = default);
-    Task<List<Transaction>> GetByPaymentMethodIdAsync(Guid paymentMethodId, CancellationToken cancellationToken = default);
-    // ... autres méthodes existantes
-}
-
-public interface IPaymentRepository
-{
-    Task<List<Domain.Entities.Payment>> GetRecentByCustomerIdAsync(Guid customerId, TimeSpan timeSpan, CancellationToken cancellationToken = default);
-    Task<List<Domain.Entities.Payment>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
-    // ... autres méthodes existantes
 }

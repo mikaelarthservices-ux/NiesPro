@@ -1,6 +1,7 @@
 using Payment.Domain.Entities;
 using Payment.Domain.Enums;
 using Payment.Domain.ValueObjects;
+using Payment.Application.Handlers;
 using Microsoft.Extensions.Logging;
 
 namespace Payment.Application.Services;
@@ -12,6 +13,7 @@ public interface IPaymentProcessorFactory
 {
     IPaymentProcessor GetProcessor(PaymentMethodType paymentMethodType);
     IPaymentProcessor GetProcessor(string processorName);
+    IPaymentProcessor GetDefaultProcessor();
     Task<List<string>> GetAvailableProcessorsAsync(CancellationToken cancellationToken = default);
 }
 
@@ -32,6 +34,7 @@ public interface IPaymentProcessor
     Task<PaymentProcessorResult> VoidPaymentAsync(string transactionId, CancellationToken cancellationToken = default);
     Task<PaymentProcessorStatus> GetPaymentStatusAsync(string transactionId, CancellationToken cancellationToken = default);
     Task<PaymentProcessorResult> Process3DSecureAsync(string transactionId, string paRes, CancellationToken cancellationToken = default);
+    // TODO: Ajouter ProcessPaymentAsync une fois les types alignés
 }
 
 /// <summary>
@@ -102,6 +105,13 @@ public class PaymentProcessorFactory : IPaymentProcessorFactory
         }
 
         return processor;
+    }
+
+    public IPaymentProcessor GetDefaultProcessor()
+    {
+        // Retourner le premier processeur disponible ou Stripe par défaut
+        var defaultProcessorName = _processorMappings.Values.FirstOrDefault() ?? "Stripe";
+        return GetProcessor(defaultProcessorName);
     }
 
     public Task<List<string>> GetAvailableProcessorsAsync(CancellationToken cancellationToken = default)

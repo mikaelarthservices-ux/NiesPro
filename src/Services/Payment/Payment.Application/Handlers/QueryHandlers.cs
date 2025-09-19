@@ -5,6 +5,7 @@ using Payment.Application.DTOs;
 using Payment.Application.Mappings;
 using Payment.Domain.Entities;
 using Payment.Domain.Enums;
+using Payment.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Payment.Application.Handlers;
@@ -144,12 +145,6 @@ public class GetPaymentsByCustomerHandler : IRequestHandler<GetPaymentsByCustome
                 request.CustomerId,
                 request.Page,
                 request.PageSize,
-                request.Status,
-                request.FromDate,
-                request.ToDate,
-                request.MinAmount,
-                request.MaxAmount,
-                request.Currency,
                 cancellationToken);
 
             var dtos = _mapper.Map<List<PaymentSummaryDto>>(payments);
@@ -302,16 +297,10 @@ public class SearchPaymentsHandler : IRequestHandler<SearchPaymentsQuery, Paymen
                 request.MerchantId,
                 request.CustomerId,
                 request.Statuses,
-                request.PaymentMethodTypes,
                 request.FromDate,
                 request.ToDate,
-                request.MinAmount,
-                request.MaxAmount,
-                request.Currency,
                 request.Page,
                 request.PageSize,
-                request.SortBy,
-                request.SortOrder,
                 cancellationToken);
 
             var dtos = _mapper.Map<List<PaymentSummaryDto>>(payments);

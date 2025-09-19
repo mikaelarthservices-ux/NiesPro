@@ -95,6 +95,89 @@ public partial class PaymentRepository : BaseRepository<Domain.Entities.Payment>
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<Domain.Entities.Payment?> GetByNumberAsync(string paymentNumber, CancellationToken cancellationToken = default)
+    {
+        return await _context.Payments
+            .Include(p => p.Merchant)
+            .Include(p => p.Transactions)
+            .Include(p => p.Refunds)
+            .FirstOrDefaultAsync(p => p.PaymentNumber == paymentNumber, cancellationToken);
+    }
+
+    public async Task<(List<Domain.Entities.Payment> payments, int totalCount)> GetByCustomerIdPagedAsync(
+        Guid customerId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments
+            .Include(p => p.Merchant)
+            .Include(p => p.Transactions)
+            .Where(p => p.CustomerId == customerId)
+            .OrderByDescending(p => p.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var skip = (pageNumber - 1) * pageSize;
+        
+        var payments = await query
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (payments, totalCount);
+    }
+
+    public async Task<(List<Domain.Entities.Payment> payments, int totalCount)> SearchAsync(
+        string? searchTerm, Guid? merchantId = null, Guid? customerId = null, List<PaymentStatus>? statuses = null,
+        DateTime? fromDate = null, DateTime? toDate = null, int pageNumber = 1, int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments
+            .Include(p => p.Merchant)
+            .Include(p => p.Transactions)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            query = query.Where(p => p.PaymentNumber.Contains(searchTerm) || 
+                                   p.Reference.Contains(searchTerm));
+        }
+
+        if (merchantId.HasValue)
+        {
+            query = query.Where(p => p.MerchantId == merchantId.Value);
+        }
+
+        if (customerId.HasValue)
+        {
+            query = query.Where(p => p.CustomerId == customerId.Value);
+        }
+
+        if (statuses != null && statuses.Any())
+        {
+            query = query.Where(p => statuses.Contains(p.Status));
+        }
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt >= fromDate.Value);
+        }
+
+        if (toDate.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt <= toDate.Value);
+        }
+
+        query = query.OrderByDescending(p => p.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var skip = (pageNumber - 1) * pageSize;
+        
+        var payments = await query
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (payments, totalCount);
+    }
+
     public async Task<decimal> GetTotalAmountByMerchantAsync(Guid merchantId, DateTime from, DateTime to, CancellationToken cancellationToken = default)
     {
         return await _context.Payments
@@ -152,6 +235,29 @@ public partial class PaymentRepository : BaseRepository<Domain.Entities.Payment>
             .Take(take)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<Payment.Domain.Entities.Payment?> GetByPaymentNumberAsync(string paymentNumber, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .FirstOrDefaultAsync(p => p.PaymentNumber == paymentNumber, cancellationToken);
+    }
+
+    public async Task<List<Payment.Domain.Entities.Payment>> GetByDateRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(p => p.CreatedAt >= from && p.CreatedAt <= to)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Payment.Domain.Entities.Payment>> GetByMerchantIdAndDateRangeAsync(
+        Guid merchantId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(p => p.MerchantId == merchantId && p.CreatedAt >= fromDate && p.CreatedAt <= toDate)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }
 
 /// <summary>
@@ -169,6 +275,23 @@ public partial class TransactionRepository : BaseRepository<Transaction>, ITrans
             .Include(t => t.Payment)
             .Include(t => t.PaymentMethod)
             .FirstOrDefaultAsync(t => t.ProcessorTransactionId == processorTransactionId, cancellationToken);
+    }
+
+    public async Task<Transaction?> GetByTransactionNumberAsync(string transactionNumber, CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Include(t => t.Payment)
+            .Include(t => t.PaymentMethod)
+            .FirstOrDefaultAsync(t => t.TransactionNumber == transactionNumber, cancellationToken);
+    }
+
+    public async Task<Transaction?> GetByIdWithDetailsAsync(Guid transactionId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Include(t => t.Payment)
+            .ThenInclude(p => p.Merchant)
+            .Include(t => t.PaymentMethod)
+            .FirstOrDefaultAsync(t => t.Id == transactionId, cancellationToken);
     }
 
     public async Task<List<Transaction>> GetByPaymentIdAsync(Guid paymentId, CancellationToken cancellationToken = default)
@@ -273,6 +396,30 @@ public partial class TransactionRepository : BaseRepository<Transaction>, ITrans
 
         return new List<Transaction>();
     }
+
+    public async Task<List<Transaction>> GetByMerchantIdAsync(Guid merchantId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(t => t.MerchantId == merchantId)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Transaction>> GetByStatusAsync(TransactionStatus status, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(t => t.Status == status)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Transaction>> GetByDateRangeAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(t => t.CreatedAt >= from && t.CreatedAt <= to)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }
 
 /// <summary>
@@ -337,6 +484,20 @@ public partial class PaymentMethodRepository : BaseRepository<PaymentMethod>, IP
         await _context.PaymentMethods
             .Where(pm => pm.Id == paymentMethodId)
             .ExecuteUpdateAsync(pm => pm.SetProperty(p => p.LastUsedAt, DateTime.UtcNow), cancellationToken);
+    }
+
+    public async Task<List<PaymentMethod>> GetActiveMethodsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(pm => pm.IsActive)
+            .OrderByDescending(pm => pm.LastUsedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PaymentMethod?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .FirstOrDefaultAsync(pm => pm.Token == token, cancellationToken);
     }
 }
 
@@ -419,6 +580,13 @@ public partial class CardRepository : BaseRepository<Card>, ICardRepository
             .Where(c => c.Id == cardId)
             .ExecuteUpdateAsync(c => c.SetProperty(card => card.IsActive, false), cancellationToken);
     }
+
+    public async Task<Card?> GetByMaskedNumberAsync(string maskedNumber, Guid customerId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(c => c.MaskedNumber == maskedNumber && c.CustomerId == customerId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }
 
 /// <summary>
@@ -463,6 +631,15 @@ public partial class ThreeDSecureRepository : BaseRepository<ThreeDSecureAuthent
             .Where(tds => tds.Status == ThreeDSecureStatus.Pending && tds.CreatedAt < cutoffTime)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<ThreeDSecureAuthentication>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
+    {
+        return await _context.ThreeDSecureAuthentications
+            .Include(tds => tds.Card)
+            .Where(tds => tds.Card.CustomerId == customerId)
+            .OrderByDescending(tds => tds.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }
 
 /// <summary>
@@ -500,5 +677,23 @@ public partial class MerchantRepository : BaseRepository<Merchant>, IMerchantRep
             .Where(m => m.Name.Contains(searchTerm) || m.Code.Contains(searchTerm))
             .OrderBy(m => m.Name)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Merchant?> GetByApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        return await _context.Merchants
+            .FirstOrDefaultAsync(m => m.ApiKey == apiKey, cancellationToken);
+    }
+
+    public async Task<bool> ApiKeyExistsAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        return await _context.Merchants
+            .AnyAsync(m => m.ApiKey == apiKey, cancellationToken);
+    }
+
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await _context.Merchants
+            .AnyAsync(m => m.Email == email, cancellationToken);
     }
 }

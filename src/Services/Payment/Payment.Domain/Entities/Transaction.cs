@@ -1,6 +1,7 @@
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
 using Payment.Domain.Events;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -142,6 +143,7 @@ public class Transaction : BaseEntity
     /// <summary>
     /// Adresse IP pour la transaction (alias vers ClientIpAddress)
     /// </summary>
+    [NotMapped]
     public string? IpAddress => ClientIpAddress;
 
     /// <summary>
@@ -167,6 +169,7 @@ public class Transaction : BaseEntity
     /// <summary>
     /// Frais de transaction (alias vers Fees pour compatibilité EF)
     /// </summary>
+    [NotMapped]
     public Money? Fee => Fees;
 
     /// <summary>
@@ -193,6 +196,8 @@ public class Transaction : BaseEntity
     /// Événements de domaine
     /// </summary>
     private readonly List<IDomainEvent> _domainEvents = new();
+    
+    [NotMapped]
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     /// <summary>

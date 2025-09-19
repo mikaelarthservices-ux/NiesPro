@@ -190,7 +190,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configuration des Health Checks
 builder.Services.AddHealthChecks()
-    .AddDbContext<PaymentDbContext>()
+    .AddDbContextCheck<PaymentDbContext>()
     .AddCheck("Payment Processors", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
     .AddCheck("Fraud Detection Service", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
     .AddCheck("External APIs", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());

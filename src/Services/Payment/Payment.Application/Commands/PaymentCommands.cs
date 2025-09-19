@@ -60,6 +60,21 @@ public class CreatePaymentCommand : IRequest<CreatePaymentResult>
     public decimal? MinimumPartialAmount { get; set; }
 
     /// <summary>
+    /// Adresse IP du client
+    /// </summary>
+    public string? IpAddress { get; set; }
+
+    /// <summary>
+    /// User-Agent du navigateur
+    /// </summary>
+    public string? UserAgent { get; set; }
+
+    /// <summary>
+    /// Identifiant de session
+    /// </summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>
     /// Devise du montant minimum partiel
     /// </summary>
     public string? MinimumPartialCurrency { get; set; }
@@ -94,6 +109,15 @@ public class CreatePaymentResult
     /// Identifiant du paiement créé
     /// </summary>
     public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Identifiant (alias pour compatibilité)
+    /// </summary>
+    public Guid Id 
+    { 
+        get => PaymentId; 
+        set => PaymentId = value; 
+    }
 
     /// <summary>
     /// Numéro de paiement
@@ -190,6 +214,24 @@ public class ProcessPaymentCommand : IRequest<ProcessPaymentResult>
     /// Force le traitement même en cas de score de fraude élevé
     /// </summary>
     public bool ForceProcess { get; set; } = false;
+
+    /// <summary>
+    /// Adresse IP du client (alias pour compatibilité)
+    /// </summary>
+    public string? IpAddress 
+    { 
+        get => ClientIpAddress; 
+        set => ClientIpAddress = value; 
+    }
+
+    /// <summary>
+    /// User Agent du client (alias pour compatibilité)
+    /// </summary>
+    public string? UserAgent 
+    { 
+        get => ClientUserAgent; 
+        set => ClientUserAgent = value; 
+    }
 }
 
 /// <summary>
@@ -415,6 +457,15 @@ public class RefundTransactionCommand : IRequest<RefundTransactionResult>
     /// Identifiant de l'utilisateur qui initie le remboursement
     /// </summary>
     public Guid? InitiatedBy { get; set; }
+
+    /// <summary>
+    /// Identifiant utilisateur (alias pour compatibilité)
+    /// </summary>
+    public Guid? UserId 
+    { 
+        get => InitiatedBy; 
+        set => InitiatedBy = value; 
+    }
 }
 
 /// <summary>
@@ -466,4 +517,51 @@ public class RefundTransactionResult
     /// Message d'erreur
     /// </summary>
     public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Commande pour annuler un paiement
+/// </summary>
+public class CancelPaymentCommand : IRequest<CancelPaymentResult>
+{
+    /// <summary>
+    /// Identifiant du paiement à annuler
+    /// </summary>
+    public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Raison de l'annulation
+    /// </summary>
+    public string? CancellationReason { get; set; }
+
+    /// <summary>
+    /// Identifiant de l'utilisateur qui annule
+    /// </summary>
+    public Guid? UserId { get; set; }
+}
+
+/// <summary>
+/// Résultat de l'annulation de paiement
+/// </summary>
+public class CancelPaymentResult
+{
+    /// <summary>
+    /// Indication de succès
+    /// </summary>
+    public bool IsSuccess { get; set; }
+
+    /// <summary>
+    /// Message d'erreur
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Identifiant du paiement annulé
+    /// </summary>
+    public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Date d'annulation
+    /// </summary>
+    public DateTime CancelledAt { get; set; }
 }

@@ -1,5 +1,6 @@
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -21,6 +22,7 @@ public class PaymentMethod : BaseEntity
     /// <summary>
     /// Nom du moyen de paiement (alias pour DisplayName)
     /// </summary>
+    [NotMapped]
     public string Name => DisplayName;
 
     /// <summary>

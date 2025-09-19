@@ -84,15 +84,15 @@ public class PaymentMethodsController : ControllerBase
     /// <param name="cancellationToken">Token d'annulation</param>
     /// <returns>Détails du moyen de paiement (sans données sensibles)</returns>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(PaymentMethodDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaymentMethodDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PaymentMethodDto>> GetPaymentMethod(
+    public async Task<ActionResult<PaymentMethodDetailDto>> GetPaymentMethod(
         Guid id,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var query = new GetPaymentMethodByIdQuery { PaymentMethodId = id };
+            var query = new GetPaymentMethodByIdQuery(id);
             var result = await _mediator.Send(query, cancellationToken);
 
             if (result == null)
@@ -132,7 +132,7 @@ public class PaymentMethodsController : ControllerBase
             if (!await CanAccessCustomerData(customerId))
                 return Forbid();
 
-            var query = new GetPaymentMethodsByCustomerQuery { CustomerId = customerId };
+            var query = new GetPaymentMethodsByCustomerQuery(customerId);
             var result = await _mediator.Send(query, cancellationToken);
 
             return Ok(result);
@@ -166,7 +166,7 @@ public class PaymentMethodsController : ControllerBase
             command.PaymentMethodId = id;
 
             // Récupérer le moyen de paiement pour vérifier l'autorisation
-            var getQuery = new GetPaymentMethodByIdQuery { PaymentMethodId = id };
+            var getQuery = new GetPaymentMethodByIdQuery(id);
             var paymentMethod = await _mediator.Send(getQuery, cancellationToken);
 
             if (paymentMethod == null)
@@ -212,7 +212,7 @@ public class PaymentMethodsController : ControllerBase
         try
         {
             // Récupérer le moyen de paiement pour vérifier l'autorisation
-            var getQuery = new GetPaymentMethodByIdQuery { PaymentMethodId = id };
+            var getQuery = new GetPaymentMethodByIdQuery(id);
             var paymentMethod = await _mediator.Send(getQuery, cancellationToken);
 
             if (paymentMethod == null)
@@ -314,6 +314,29 @@ public class PaymentMethodsController : ControllerBase
         {
             var userId = GetUserId();
             return customerId.ToString() == userId;
+        }
+
+        return false;
+    }
+
+    private async Task<bool> CanAccessPaymentMethod(PaymentMethodDetailDto paymentMethod)
+    {
+        // Admin peut accéder à tous les moyens de paiement
+        if (User.IsInRole("Admin"))
+            return true;
+
+        // Client peut accéder à ses propres moyens de paiement
+        if (User.IsInRole("Customer"))
+        {
+            var userId = GetUserId();
+            return paymentMethod.CustomerId.ToString() == userId;
+        }
+
+        // Marchand peut accéder aux moyens de paiement de ses clients
+        if (User.IsInRole("Merchant"))
+        {
+            // Logique pour vérifier si le moyen de paiement appartient à un client du marchand
+            return true;
         }
 
         return false;

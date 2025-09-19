@@ -145,15 +145,15 @@ public class TransactionsController : ControllerBase
     /// <param name="cancellationToken">Token d'annulation</param>
     /// <returns>Détails de la transaction</returns>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(TransactionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TransactionDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TransactionDto>> GetTransaction(
+    public async Task<ActionResult<TransactionDetailDto>> GetTransaction(
         Guid id,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var query = new GetTransactionByIdQuery { TransactionId = id };
+            var query = new GetTransactionByIdQuery(id);
             var result = await _mediator.Send(query, cancellationToken);
 
             if (result == null)
@@ -188,11 +188,11 @@ public class TransactionsController : ControllerBase
     {
         try
         {
-            var query = new GetTransactionsByPaymentQuery { PaymentId = paymentId };
+            var query = new GetTransactionsByPaymentQuery(paymentId);
             var result = await _mediator.Send(query, cancellationToken);
 
             // Filtrer les transactions selon les autorisations
-            var filteredResults = new List<TransactionDto>();
+            var filteredResults = new List<TransactionSummaryDto>();
             foreach (var transaction in result)
             {
                 if (await CanAccessTransaction(transaction))
@@ -308,7 +308,6 @@ public class TransactionsController : ControllerBase
         {
             var query = new GetSuspiciousTransactionsQuery
             {
-                MinimumFraudScore = minimumScore,
                 Page = page,
                 PageSize = Math.Min(pageSize, 100)
             };
@@ -362,17 +361,6 @@ public class TransactionsController : ControllerBase
     }
 
     // Méthodes utilitaires privées
-    private string? GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    }
-
-    private Guid? GetMerchantId()
-    {
-        var merchantIdClaim = User.FindFirst("MerchantId")?.Value;
-        return Guid.TryParse(merchantIdClaim, out var merchantId) ? merchantId : null;
-    }
-
     private async Task<bool> CanAccessTransaction(TransactionDto transaction)
     {
         // Admin peut accéder à toutes les transactions
@@ -392,7 +380,61 @@ public class TransactionsController : ControllerBase
         if (User.IsInRole("Customer"))
         {
             var userId = GetUserId();
-            return transaction.CustomerId.ToString() == userId;
+            return userId.HasValue && transaction.CustomerId == userId.Value;
+        }
+
+        // Analyste de fraude peut accéder aux transactions pour analyse
+        if (User.IsInRole("FraudAnalyst"))
+            return true;
+
+        return false;
+    }
+
+    private async Task<bool> CanAccessTransaction(TransactionDetailDto transaction)
+    {
+        // Admin peut accéder à toutes les transactions
+        if (User.IsInRole("Admin"))
+            return true;
+
+        // Marchand peut accéder aux transactions de ses paiements
+        if (User.IsInRole("Merchant"))
+        {
+            var merchantId = GetMerchantId();
+            return true;
+        }
+
+        // Client peut accéder à ses propres transactions
+        if (User.IsInRole("Customer"))
+        {
+            var userId = GetUserId();
+            return userId.HasValue && transaction.CustomerId == userId.Value;
+        }
+
+        // Analyste de fraude peut accéder aux transactions pour analyse
+        if (User.IsInRole("FraudAnalyst"))
+            return true;
+
+        return false;
+    }
+
+    private async Task<bool> CanAccessTransaction(TransactionSummaryDto transaction)
+    {
+        // Admin peut accéder à toutes les transactions
+        if (User.IsInRole("Admin"))
+            return true;
+
+        // Marchand peut accéder aux transactions de ses paiements
+        if (User.IsInRole("Merchant"))
+        {
+            var merchantId = GetMerchantId();
+            return true;
+        }
+
+        // Client peut accéder à ses propres transactions
+        if (User.IsInRole("Customer"))
+        {
+            var userId = GetUserId();
+            return userId.HasValue && transaction.CustomerId == userId.Value;
         }
 
         // Analyste de fraude peut accéder aux transactions pour analyse
@@ -412,7 +454,7 @@ public class TransactionsController : ControllerBase
         if (User.IsInRole("Customer"))
         {
             var userId = GetUserId();
-            return customerId.ToString() == userId;
+            return userId.HasValue && customerId == userId.Value;
         }
 
         // Analyste de fraude peut accéder aux données pour analyse
@@ -420,6 +462,23 @@ public class TransactionsController : ControllerBase
             return true;
 
         return false;
+    }
+
+    // Méthodes utilitaires privées
+    private Guid? GetUserId()
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdString, out var userId))
+            return userId;
+        return null;
+    }
+
+    private Guid? GetMerchantId()
+    {
+        var merchantIdString = User.FindFirst("MerchantId")?.Value;
+        if (Guid.TryParse(merchantIdString, out var merchantId))
+            return merchantId;
+        return null;
     }
 }
 

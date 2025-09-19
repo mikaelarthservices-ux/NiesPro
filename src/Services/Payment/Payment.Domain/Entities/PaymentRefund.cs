@@ -1,5 +1,6 @@
 using Payment.Domain.Enums;
 using Payment.Domain.ValueObjects;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -26,6 +27,7 @@ public class PaymentRefund : BaseEntity
     /// <summary>
     /// Référence unique du remboursement (alias pour RefundNumber)
     /// </summary>
+    [NotMapped]
     public string Reference => RefundNumber;
 
     /// <summary>

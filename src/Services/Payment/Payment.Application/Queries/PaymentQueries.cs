@@ -342,43 +342,72 @@ public class SearchPaymentsQuery : IRequest<Payment.Application.DTOs.PagedResult
 }
 
 /// <summary>
-/// Résultat paginé générique
+/// Requête pour rechercher des transactions
 /// </summary>
-/// <typeparam name="T">Type des éléments</typeparam>
-public class PagedResult<T>
+public class SearchTransactionsQuery : IRequest<Payment.Application.DTOs.PagedResult<TransactionSummaryDto>>
 {
     /// <summary>
-    /// Éléments de la page courante
+    /// Terme de recherche
     /// </summary>
-    public List<T> Items { get; set; } = new();
+    public string? SearchTerm { get; set; }
 
     /// <summary>
-    /// Nombre total d'éléments
+    /// Statut de la transaction
     /// </summary>
-    public int TotalCount { get; set; }
+    public TransactionStatus? Status { get; set; }
 
     /// <summary>
-    /// Page courante
+    /// Identifiant du paiement
     /// </summary>
-    public int Page { get; set; }
+    public Guid? PaymentId { get; set; }
 
     /// <summary>
-    /// Taille de la page
+    /// Identifiant du marchand
     /// </summary>
-    public int PageSize { get; set; }
+    public Guid? MerchantId { get; set; }
 
     /// <summary>
-    /// Nombre total de pages
+    /// Date de début
     /// </summary>
-    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+    public DateTime? StartDate { get; set; }
 
     /// <summary>
-    /// Indique s'il y a une page précédente
+    /// Date de fin
     /// </summary>
-    public bool HasPreviousPage => Page > 1;
+    public DateTime? EndDate { get; set; }
 
     /// <summary>
-    /// Indique s'il y a une page suivante
+    /// Montant minimum
     /// </summary>
-    public bool HasNextPage => Page < TotalPages;
+    public decimal? MinAmount { get; set; }
+
+    /// <summary>
+    /// Montant maximum
+    /// </summary>
+    public decimal? MaxAmount { get; set; }
+
+    /// <summary>
+    /// Devise
+    /// </summary>
+    public string? Currency { get; set; }
+
+    /// <summary>
+    /// Page à récupérer
+    /// </summary>
+    public int Page { get; set; } = 1;
+
+    /// <summary>
+    /// Nombre d'éléments par page
+    /// </summary>
+    public int PageSize { get; set; } = 20;
+
+    /// <summary>
+    /// Champ de tri
+    /// </summary>
+    public string? SortBy { get; set; }
+
+    /// <summary>
+    /// Ordre de tri (asc/desc)
+    /// </summary>
+    public string? SortOrder { get; set; } = "desc";
 }

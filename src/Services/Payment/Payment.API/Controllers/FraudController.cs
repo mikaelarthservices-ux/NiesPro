@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Payment.Application.Commands.FraudDetection;
 using Payment.Application.Queries.FraudDetection;
 using Payment.Application.DTOs.FraudDetection;
+using Payment.Application.DTOs;
 using MediatR;
 using System.Security.Claims;
 

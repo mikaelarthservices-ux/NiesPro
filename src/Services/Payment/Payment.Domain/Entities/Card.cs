@@ -1,4 +1,5 @@
 using Payment.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -31,6 +32,7 @@ public class Card
     /// <summary>
     /// Alias pour les 4 derniers chiffres (compatibilité Infrastructure)
     /// </summary>
+    [NotMapped]
     public string LastFourDigits => Last4Digits;
 
     /// <summary>

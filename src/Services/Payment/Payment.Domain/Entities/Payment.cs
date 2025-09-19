@@ -1,5 +1,6 @@
 using Payment.Domain.Enums;
 using Payment.Domain.ValueObjects;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Payment.Domain.Entities;
 
@@ -43,6 +44,7 @@ public class Payment
     /// <summary>
     /// Numéro de paiement (alias pour Reference pour compatibilité)
     /// </summary>
+    [NotMapped]
     public string PaymentNumber => Reference;
 
     /// <summary>
@@ -281,21 +283,25 @@ public class Payment
     /// <summary>
     /// Frais de traitement (pour l'instant, retourne null - à implémenter)
     /// </summary>
+    [NotMapped]
     public Money? ProcessingFees => null;
 
     /// <summary>
     /// Mode de frais (pour l'instant, par défaut)
     /// </summary>
+    [NotMapped]
     public string FeeMode => "Standard";
 
     /// <summary>
     /// Montant minimum pour paiement partiel (pour l'instant, null)
     /// </summary>
+    [NotMapped]
     public Money? MinimumPartialAmount => null;
 
     /// <summary>
     /// Dernière méthode de paiement utilisée (basée sur la dernière transaction)
     /// </summary>
+    [NotMapped]
     public PaymentMethod? LastPaymentMethod => _transactions.LastOrDefault()?.PaymentMethod;
 
     /// <summary>
@@ -306,6 +312,7 @@ public class Payment
     /// <summary>
     /// Collection publique en lecture seule des transactions
     /// </summary>
+    [NotMapped]
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
 
     /// <summary>
@@ -316,11 +323,13 @@ public class Payment
     /// <summary>
     /// Données de session (pour l'instant, dictionnaire simple)
     /// </summary>
+    [NotMapped]
     public Dictionary<string, string> SessionData => Metadata;
 
     /// <summary>
     /// Autorise les paiements partiels (pour l'instant, false par défaut)
     /// </summary>
+    [NotMapped]
     public bool AllowPartialPayments => false;
 
     /// <summary>
