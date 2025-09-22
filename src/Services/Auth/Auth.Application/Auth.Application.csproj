@@ -13,8 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Auth.Domain\Auth.Domain.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Contracts\NiesPro.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Common\BuildingBlocks.Common.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Contracts\NiesPro.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

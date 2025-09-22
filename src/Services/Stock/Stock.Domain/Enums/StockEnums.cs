@@ -9,11 +9,13 @@ public enum MovementType
     /// Entrée de stock - réception marchandise
     /// </summary>
     In = 1,
+    Inbound = 1, // Alias pour compatibilité
 
     /// <summary>
     /// Sortie de stock - vente ou consommation
     /// </summary>
     Out = 2,
+    Outbound = 2, // Alias pour compatibilité
 
     /// <summary>
     /// Ajustement positif - correction d'inventaire
@@ -29,6 +31,7 @@ public enum MovementType
     /// Transfert entre emplacements
     /// </summary>
     Transfer = 5,
+    TransferOut = 5, // Alias pour compatibilité
 
     /// <summary>
     /// Réservation pour commande
@@ -70,11 +73,13 @@ public enum ReservationStatus
     /// Réservation confirmée et consommée
     /// </summary>
     Consumed = 2,
+    Confirmed = 2, // Alias pour compatibilité
 
     /// <summary>
     /// Réservation libérée/annulée
     /// </summary>
     Released = 3,
+    Cancelled = 3, // Alias pour compatibilité
 
     /// <summary>
     /// Réservation expirée automatiquement
@@ -125,7 +130,32 @@ public enum LocationType
     /// <summary>
     /// Bar (spécifique restaurant)
     /// </summary>
-    Bar = 8
+    Bar = 8,
+
+    /// <summary>
+    /// Stockage congelé
+    /// </summary>
+    FrozenStorage = 9,
+
+    /// <summary>
+    /// Stockage froid
+    /// </summary>
+    ColdStorage = 10,
+
+    /// <summary>
+    /// Stockage sec
+    /// </summary>
+    DryStorage = 11,
+
+    /// <summary>
+    /// Zone de production
+    /// </summary>
+    Production = 12,
+
+    /// <summary>
+    /// Zone produits endommagés
+    /// </summary>
+    Damaged = 13
 }
 
 /// <summary>
@@ -147,6 +177,8 @@ public enum PurchaseOrderStatus
     /// Approuvée et envoyée au fournisseur
     /// </summary>
     Approved = 3,
+    Confirmed = 3, // Alias pour compatibilité
+    Sent = 3, // Alias pour compatibilité
 
     /// <summary>
     /// Partiellement reçue
@@ -209,6 +241,7 @@ public enum AlertType
     /// Rupture de stock
     /// </summary>
     OutOfStock = 2,
+    StockOut = 2, // Alias pour compatibilité
 
     /// <summary>
     /// Surstock
@@ -228,7 +261,17 @@ public enum AlertType
     /// <summary>
     /// Mouvement suspect détecté
     /// </summary>
-    SuspiciousMovement = 6
+    SuspiciousMovement = 6,
+
+    /// <summary>
+    /// Point de récommande atteint
+    /// </summary>
+    ReorderPoint = 7,
+
+    /// <summary>
+    /// Stock de sécurité atteint
+    /// </summary>
+    SafetyStock = 8
 }
 
 /// <summary>
@@ -241,7 +284,7 @@ public static class StockEnumExtensions
     /// </summary>
     public static bool IncreasesStock(this MovementType movementType)
     {
-        return movementType is MovementType.In or MovementType.AdjustmentIn or 
+        return movementType is MovementType.In or MovementType.Inbound or MovementType.AdjustmentIn or 
                MovementType.Return or MovementType.ReservationRelease;
     }
 
@@ -250,8 +293,26 @@ public static class StockEnumExtensions
     /// </summary>
     public static bool DecreasesStock(this MovementType movementType)
     {
-        return movementType is MovementType.Out or MovementType.AdjustmentOut or 
+        return movementType is MovementType.Out or MovementType.Outbound or MovementType.AdjustmentOut or 
                MovementType.Reservation or MovementType.Loss or MovementType.Expiry;
+    }
+
+    /// <summary>
+    /// Vérifier si le mouvement est entrant
+    /// </summary>
+    public static bool IsInbound(this MovementType movementType)
+    {
+        return movementType is MovementType.In or MovementType.Inbound or MovementType.AdjustmentIn or 
+               MovementType.Return or MovementType.ReservationRelease;
+    }
+
+    /// <summary>
+    /// Vérifier si le mouvement est sortant
+    /// </summary>
+    public static bool IsOutbound(this MovementType movementType)
+    {
+        return movementType is MovementType.Out or MovementType.Outbound or MovementType.AdjustmentOut or 
+               MovementType.Reservation or MovementType.Loss or MovementType.Expiry or MovementType.Transfer or MovementType.TransferOut;
     }
 
     /// <summary>

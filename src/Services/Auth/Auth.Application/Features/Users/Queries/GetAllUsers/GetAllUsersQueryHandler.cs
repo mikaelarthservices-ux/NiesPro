@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Auth.Application.Features.Users.Queries.GetAllUsers;
 using Auth.Domain.Interfaces;
 using Auth.Application.Common.Models;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 using Auth.Domain.Entities;
 
 namespace Auth.Application.Features.Users.Queries.GetAllUsers
@@ -122,7 +122,7 @@ namespace Auth.Application.Features.Users.Queries.GetAllUsers
                 _logger.LogInformation("Successfully retrieved {UserCount} users out of {TotalCount} total", 
                     userDtos.Count, totalCount);
 
-                return BuildingBlocks.Common.DTOs.ApiResponse<GetAllUsersResponse>.CreateSuccess(response, 
+                return ApiResponse<GetAllUsersResponse>.CreateSuccess(response, 
                     $"Retrieved {userDtos.Count} users successfully");
             }
             catch (Exception ex)

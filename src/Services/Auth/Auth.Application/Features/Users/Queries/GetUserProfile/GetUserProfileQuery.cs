@@ -1,5 +1,5 @@
 using MediatR;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Auth.Application.Features.Users.Queries.GetUserProfile
 {

@@ -1,5 +1,5 @@
 using MediatR;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 using Auth.Application.Common.Models;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser

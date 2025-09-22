@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Enums;
 using Stock.Domain.Events;
 using Stock.Domain.ValueObjects;
@@ -101,7 +102,7 @@ public sealed class Location : Entity, IAggregateRoot
         Name = name.Trim();
         Description = description?.Trim();
         Address = address;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateTimestamp();
     }
 
     /// <summary>

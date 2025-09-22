@@ -1,18 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using NiesPro.Contracts.Infrastructure;
 
 namespace Catalog.Domain.Entities
 {
-    /// <summary>
-    /// Base entity for all catalog domain entities  
-    /// </summary>
-    public abstract class BaseEntity
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
-        public bool IsDeleted { get; set; } = false;
-    }
-
     /// <summary>
     /// Product entity - Core entity of the catalog
     /// </summary>

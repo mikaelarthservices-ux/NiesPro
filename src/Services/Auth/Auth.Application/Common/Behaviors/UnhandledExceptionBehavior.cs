@@ -1,6 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Auth.Application.Common.Behaviors
 {

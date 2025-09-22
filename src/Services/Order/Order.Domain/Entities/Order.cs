@@ -22,8 +22,8 @@ public sealed class Order : AggregateRoot
     public Money DiscountAmount { get; private set; } = Money.Zero();
     public Money TotalAmount => SubTotal.Add(TaxAmount).Add(ShippingCost).Subtract(DiscountAmount);
     
-    // Propriétés de suivi
-    public DateTime CreatedAt { get; private set; }
+    // Propriétés de suivi - utilise Entity.CreatedAt de base
+    public new DateTime CreatedAt { get; private set; }
     public DateTime? ConfirmedAt { get; private set; }
     public DateTime? ShippedAt { get; private set; }
     public DateTime? DeliveredAt { get; private set; }

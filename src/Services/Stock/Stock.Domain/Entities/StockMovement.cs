@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Enums;
 using Stock.Domain.Events;
 using Stock.Domain.ValueObjects;
@@ -26,7 +27,10 @@ public sealed class StockMovement : Entity, IAggregateRoot
     public Guid? ReservationId { get; private set; }
     public Guid? TransferToLocationId { get; private set; }
 
-    private StockMovement() { } // EF Constructor
+    private StockMovement() 
+    { 
+        Quantity = new StockQuantity(0, "unit");
+    }
 
     public StockMovement(
         Guid productId,

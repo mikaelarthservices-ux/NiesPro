@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Enums;
 using Stock.Domain.Events;
 using Stock.Domain.ValueObjects;
@@ -26,7 +27,10 @@ public sealed class StockReservation : Entity, IAggregateRoot
     public Guid? OrderId { get; private set; }
     public Guid? CustomerId { get; private set; }
 
-    private StockReservation() { } // EF Constructor
+    private StockReservation() 
+    { 
+        ReservedQuantity = new StockQuantity(0, "unit");
+    }
 
     public StockReservation(
         Guid productId,

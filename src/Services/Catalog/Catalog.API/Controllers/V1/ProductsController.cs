@@ -3,7 +3,7 @@ using Catalog.Application.Features.Products.Commands.CreateProduct;
 using Catalog.Application.Features.Products.Queries.GetProducts;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Catalog.API.Controllers.V1
 {

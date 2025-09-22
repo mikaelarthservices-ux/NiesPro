@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Enums;
 using Stock.Domain.ValueObjects;
 

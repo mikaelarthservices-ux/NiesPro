@@ -18,8 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Catalog.Application\Catalog.Application.csproj" />
     <ProjectReference Include="..\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Contracts\NiesPro.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Common\BuildingBlocks.Common.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Contracts\NiesPro.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

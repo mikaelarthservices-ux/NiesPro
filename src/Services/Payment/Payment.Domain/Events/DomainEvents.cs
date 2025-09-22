@@ -1,34 +1,14 @@
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
 using Payment.Domain.Entities;
+using NiesPro.Contracts.Primitives;
 
 namespace Payment.Domain.Events;
 
 /// <summary>
-/// Interface de base pour tous les événements de domaine
+/// Classe de base abstraite pour les événements de domaine Payment
 /// </summary>
-public interface IDomainEvent
-{
-    /// <summary>
-    /// Identifiant unique de l'événement
-    /// </summary>
-    Guid EventId { get; }
-
-    /// <summary>
-    /// Date et heure de création de l'événement
-    /// </summary>
-    DateTime OccurredAt { get; }
-
-    /// <summary>
-    /// Version de l'événement (pour l'évolution du schéma)
-    /// </summary>
-    int Version { get; }
-}
-
-/// <summary>
-/// Classe de base abstraite pour les événements de domaine
-/// </summary>
-public abstract class DomainEvent : IDomainEvent
+public abstract class PaymentDomainEvent : IDomainEvent
 {
     /// <inheritdoc />
     public Guid EventId { get; } = Guid.NewGuid();
@@ -43,7 +23,7 @@ public abstract class DomainEvent : IDomainEvent
 /// <summary>
 /// Événement déclenché lors de la création d'une transaction
 /// </summary>
-public class TransactionCreatedEvent : DomainEvent
+public class TransactionCreatedEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -69,7 +49,7 @@ public class TransactionCreatedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de l'autorisation d'une transaction
 /// </summary>
-public class TransactionAuthorizedEvent : DomainEvent
+public class TransactionAuthorizedEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -92,7 +72,7 @@ public class TransactionAuthorizedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la capture d'une transaction
 /// </summary>
-public class TransactionCapturedEvent : DomainEvent
+public class TransactionCapturedEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -115,7 +95,7 @@ public class TransactionCapturedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors du refus d'une transaction
 /// </summary>
-public class TransactionDeclinedEvent : DomainEvent
+public class TransactionDeclinedEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -138,7 +118,7 @@ public class TransactionDeclinedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de l'annulation d'une transaction
 /// </summary>
-public class TransactionCancelledEvent : DomainEvent
+public class TransactionCancelledEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -158,7 +138,7 @@ public class TransactionCancelledEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors d'un remboursement
 /// </summary>
-public class TransactionRefundedEvent : DomainEvent
+public class TransactionRefundedEvent : PaymentDomainEvent
 {
     public Guid OriginalTransactionId { get; }
     public Guid RefundTransactionId { get; }
@@ -181,7 +161,7 @@ public class TransactionRefundedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors du règlement d'une transaction
 /// </summary>
-public class TransactionSettledEvent : DomainEvent
+public class TransactionSettledEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -201,7 +181,7 @@ public class TransactionSettledEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la détection d'un risque de fraude élevé
 /// </summary>
-public class HighFraudRiskDetectedEvent : DomainEvent
+public class HighFraudRiskDetectedEvent : PaymentDomainEvent
 {
     public Guid TransactionId { get; }
     public string TransactionNumber { get; }
@@ -221,7 +201,7 @@ public class HighFraudRiskDetectedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la création d'un paiement
 /// </summary>
-public class PaymentCreatedEvent : DomainEvent
+public class PaymentCreatedEvent : PaymentDomainEvent
 {
     public Guid PaymentId { get; }
     public string PaymentNumber { get; }
@@ -247,7 +227,7 @@ public class PaymentCreatedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la finalisation d'un paiement
 /// </summary>
-public class PaymentCompletedEvent : DomainEvent
+public class PaymentCompletedEvent : PaymentDomainEvent
 {
     public Guid PaymentId { get; }
     public string PaymentNumber { get; }
@@ -273,7 +253,7 @@ public class PaymentCompletedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de l'échec d'un paiement
 /// </summary>
-public class PaymentFailedEvent : DomainEvent
+public class PaymentFailedEvent : PaymentDomainEvent
 {
     public Guid PaymentId { get; }
     public string PaymentNumber { get; }
@@ -296,7 +276,7 @@ public class PaymentFailedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de l'annulation d'un paiement
 /// </summary>
-public class PaymentCancelledEvent : DomainEvent
+public class PaymentCancelledEvent : PaymentDomainEvent
 {
     public Guid PaymentId { get; }
     public string PaymentNumber { get; }
@@ -319,7 +299,7 @@ public class PaymentCancelledEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de l'expiration d'un paiement
 /// </summary>
-public class PaymentExpiredEvent : DomainEvent
+public class PaymentExpiredEvent : PaymentDomainEvent
 {
     public Guid PaymentId { get; }
     public string PaymentNumber { get; }
@@ -342,7 +322,7 @@ public class PaymentExpiredEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la création d'un moyen de paiement
 /// </summary>
-public class PaymentMethodCreatedEvent : DomainEvent
+public class PaymentMethodCreatedEvent : PaymentDomainEvent
 {
     public Guid PaymentMethodId { get; }
     public PaymentMethodType Type { get; }
@@ -365,7 +345,7 @@ public class PaymentMethodCreatedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la désactivation d'un moyen de paiement
 /// </summary>
-public class PaymentMethodDeactivatedEvent : DomainEvent
+public class PaymentMethodDeactivatedEvent : PaymentDomainEvent
 {
     public Guid PaymentMethodId { get; }
     public PaymentMethodType Type { get; }
@@ -388,7 +368,7 @@ public class PaymentMethodDeactivatedEvent : DomainEvent
 /// <summary>
 /// Événement déclenché lors de la mise à jour d'un moyen de paiement par défaut
 /// </summary>
-public class DefaultPaymentMethodChangedEvent : DomainEvent
+public class DefaultPaymentMethodChangedEvent : PaymentDomainEvent
 {
     public Guid CustomerId { get; }
     public Guid? PreviousPaymentMethodId { get; }

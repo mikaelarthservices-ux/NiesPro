@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Events;
 using Stock.Domain.ValueObjects;
 
@@ -130,7 +131,7 @@ public sealed class Supplier : Entity, IAggregateRoot
             Code,
             Email,
             Phone,
-            UpdatedAt.Value));
+            UpdatedAt));
     }
 
     /// <summary>
@@ -322,7 +323,10 @@ public sealed class SupplierProduct : Entity
     public DateTime? LastOrderDate { get; private set; }
     public UnitCost? LastOrderUnitCost { get; private set; }
 
-    private SupplierProduct() { } // EF Constructor
+    private SupplierProduct() 
+    { 
+        UnitCost = new UnitCost(0, "EUR"); // Valeur par défaut pour EF
+    }
 
     public SupplierProduct(
         Guid supplierId,

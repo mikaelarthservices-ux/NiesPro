@@ -1,6 +1,6 @@
 using Catalog.Application.DTOs;
 using MediatR;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Catalog.Application.Features.Products.Queries.GetProducts
 {

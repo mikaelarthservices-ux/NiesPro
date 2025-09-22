@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Restaurant.Domain.Enums;
 using Restaurant.Domain.Events;
 using Restaurant.Domain.ValueObjects;

@@ -10,6 +10,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Serilog;
+using Serilog.Events;
+using Pomelo.EntityFrameworkCore.MySql;
 using Payment.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,13 +39,13 @@ builder.Services.AddControllers()
 builder.Services.AddDbContext<PaymentDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
     {
-        sqlOptions.EnableRetryOnFailure(
+        mysqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null);
-        sqlOptions.CommandTimeout(60);
+        mysqlOptions.CommandTimeout(60);
     });
     
     if (builder.Environment.IsDevelopment())
@@ -308,6 +310,8 @@ app.MapGet("/version", () => new
 // Migration automatique de la base de données en développement
 if (app.Environment.IsDevelopment())
 {
+    // Migration temporairement désactivée pour test API
+    /*
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
     
@@ -320,6 +324,8 @@ if (app.Environment.IsDevelopment())
     {
         Log.Error(ex, "Error during database migration");
     }
+    */
+    Log.Information("Database migration skipped for API testing");
 }
 
 // Gestion gracieuse de l'arrêt

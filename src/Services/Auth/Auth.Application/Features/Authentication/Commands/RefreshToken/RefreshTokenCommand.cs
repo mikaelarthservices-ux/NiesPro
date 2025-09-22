@@ -1,6 +1,6 @@
 using MediatR;
 using Auth.Application.Common.Models;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 using System.ComponentModel.DataAnnotations;
 
 namespace Auth.Application.Features.Authentication.Commands.RefreshToken

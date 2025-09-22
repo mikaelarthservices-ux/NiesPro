@@ -350,6 +350,9 @@ public class PaymentsController : ControllerBase
 
     private async Task<bool> CanAccessPayment(PaymentDto payment)
     {
+        // Simulation async pour éliminer warning
+        await Task.CompletedTask;
+        
         // Admin peut accéder à tous les paiements
         if (User.IsInRole("Admin"))
             return true;
@@ -373,6 +376,9 @@ public class PaymentsController : ControllerBase
 
     private async Task<bool> CanAccessPayment(PaymentDetailDto payment)
     {
+        // Simulation async pour éliminer warning
+        await Task.CompletedTask;
+        
         // Admin peut accéder à tous les paiements
         if (User.IsInRole("Admin"))
             return true;

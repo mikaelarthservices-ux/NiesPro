@@ -2,13 +2,14 @@ using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
 using Payment.Domain.Events;
 using System.ComponentModel.DataAnnotations.Schema;
+using NiesPro.Contracts.Primitives;
 
 namespace Payment.Domain.Entities;
 
 /// <summary>
 /// Entité représentant une transaction de paiement
 /// </summary>
-public class Transaction : BaseEntity
+public class Transaction : Entity
 {
     /// <summary>
     /// Numéro de transaction unique
@@ -193,18 +194,13 @@ public class Transaction : BaseEntity
     public virtual ICollection<Transaction> ChildTransactions { get; private set; }
 
     /// <summary>
-    /// Événements de domaine
-    /// </summary>
-    private readonly List<IDomainEvent> _domainEvents = new();
-    
-    [NotMapped]
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-
-    /// <summary>
     /// Constructeur protégé pour Entity Framework
     /// </summary>
     protected Transaction()
     {
+        TransactionNumber = string.Empty;
+        Amount = Money.Zero("EUR"); // Devise par défaut
+        PaymentMethod = null!;
         Metadata = new Dictionary<string, string>();
         ChildTransactions = new List<Transaction>();
     }
@@ -452,17 +448,9 @@ public class Transaction : BaseEntity
     /// <summary>
     /// Ajouter un événement de domaine
     /// </summary>
-    private void AddDomainEvent(IDomainEvent domainEvent)
+    private new void AddDomainEvent(NiesPro.Contracts.Primitives.IDomainEvent domainEvent)
     {
-        _domainEvents.Add(domainEvent);
-    }
-
-    /// <summary>
-    /// Vider les événements de domaine
-    /// </summary>
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
+        base.AddDomainEvent(domainEvent);
     }
 
     /// <summary>

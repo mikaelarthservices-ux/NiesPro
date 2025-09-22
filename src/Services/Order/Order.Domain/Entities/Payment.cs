@@ -14,8 +14,8 @@ public sealed class Payment : Entity
     public string? ProviderReference { get; private set; }
     public string? FailureReason { get; private set; }
     
-    // Propriétés de suivi
-    public DateTime CreatedAt { get; private set; }
+    // Propriétés de suivi - utilise Entity.CreatedAt de base
+    public new DateTime CreatedAt { get; private set; }
     public DateTime? ProcessedAt { get; private set; }
     public DateTime? FailedAt { get; private set; }
 

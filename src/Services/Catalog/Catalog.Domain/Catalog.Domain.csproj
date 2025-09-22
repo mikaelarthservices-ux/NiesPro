@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BuildingBlocks\Contracts\NiesPro.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Contracts\NiesPro.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 using MediatR;
 using FluentValidation;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Auth.Application.Common.Behaviors
 {

@@ -1,0 +1,61 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # NiesPro Microservices
+  - job_name: 'niespro-auth-api'
+    static_configs:
+      - targets: ['auth-api:5001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'niespro-catalog-api'
+    static_configs:
+      - targets: ['catalog-api:5003']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'niespro-order-api'
+    static_configs:
+      - targets: ['order-api:5002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'niespro-payment-api'
+    static_configs:
+      - targets: ['payment-api:5004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'niespro-stock-api'
+    static_configs:
+      - targets: ['stock-api:5005']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'niespro-gateway'
+    static_configs:
+      - targets: ['gateway-api:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Infrastructure
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql:3306']
+    scrape_interval: 60s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

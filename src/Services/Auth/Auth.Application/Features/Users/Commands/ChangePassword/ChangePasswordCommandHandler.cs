@@ -4,7 +4,7 @@ using Auth.Application.Features.Users.Commands.ChangePassword;
 using Auth.Domain.Interfaces;
 using Auth.Application.Contracts.Services;
 using Auth.Application.Common.Models;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 using Auth.Domain.Entities;
 
 namespace Auth.Application.Features.Users.Commands.ChangePassword

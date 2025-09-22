@@ -16,8 +16,13 @@ CREATE DATABASE IF NOT EXISTS NiesPro_Auth
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
--- Base des produits  
-CREATE DATABASE IF NOT EXISTS NiesPro_Product
+-- Base des produits (Catalog)
+CREATE DATABASE IF NOT EXISTS NiesPro_Catalog
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
+-- Base des produits Développement
+CREATE DATABASE IF NOT EXISTS NiesPro_Catalog_Dev
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
@@ -31,8 +36,18 @@ CREATE DATABASE IF NOT EXISTS NiesPro_Order
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
+-- Base des commandes Développement  
+CREATE DATABASE IF NOT EXISTS NiesPro_Order_Dev
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
 -- Base des paiements
 CREATE DATABASE IF NOT EXISTS NiesPro_Payment
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
+-- Base des paiements Développement
+CREATE DATABASE IF NOT EXISTS NiesPro_Payment_Dev
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
@@ -43,6 +58,11 @@ CREATE DATABASE IF NOT EXISTS NiesPro_Customer
 
 -- Base spécifique restaurant
 CREATE DATABASE IF NOT EXISTS NiesPro_Restaurant
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
+-- Base restaurant Développement
+CREATE DATABASE IF NOT EXISTS NiesPro_Restaurant_Dev
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
@@ -58,14 +78,20 @@ CREATE DATABASE IF NOT EXISTS NiesPro_Log
 -- Créer un utilisateur spécifique pour NiesPro (recommandé)
 CREATE USER IF NOT EXISTS 'niespro'@'localhost' IDENTIFIED BY 'NiesPro2025!';
 
--- Accorder tous les privilèges sur les bases NiesPro
+-- Accorder tous les privilèges sur les bases NiesPro (Production)
 GRANT ALL PRIVILEGES ON NiesPro_Auth.* TO 'niespro'@'localhost';
-GRANT ALL PRIVILEGES ON NiesPro_Product.* TO 'niespro'@'localhost';
+GRANT ALL PRIVILEGES ON NiesPro_Catalog.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Stock.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Order.* TO 'niespro'@'localhost';
+
+-- Privilèges bases de développement
+GRANT ALL PRIVILEGES ON NiesPro_Catalog_Dev.* TO 'niespro'@'localhost';
+GRANT ALL PRIVILEGES ON NiesPro_Order_Dev.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Payment.* TO 'niespro'@'localhost';
+GRANT ALL PRIVILEGES ON NiesPro_Payment_Dev.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Customer.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Restaurant.* TO 'niespro'@'localhost';
+GRANT ALL PRIVILEGES ON NiesPro_Restaurant_Dev.* TO 'niespro'@'localhost';
 GRANT ALL PRIVILEGES ON NiesPro_Log.* TO 'niespro'@'localhost';
 
 -- Appliquer les changements

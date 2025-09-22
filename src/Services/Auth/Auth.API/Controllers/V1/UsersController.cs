@@ -5,7 +5,7 @@ using Auth.Application.Features.Users.Queries.GetUserProfile;
 using Auth.Application.Features.Users.Queries.GetAllUsers;
 using Auth.API.Models.Requests;
 using Auth.API.Models.Responses;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Auth.API.Controllers.V1
 {

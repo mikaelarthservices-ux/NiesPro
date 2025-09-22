@@ -23,8 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="../Auth.Infrastructure/Auth.Infrastructure.csproj" />
     <ProjectReference Include="../Auth.Application/Auth.Application.csproj" />
-    <ProjectReference Include="../../../BuildingBlocks/BuildingBlocks.Common/BuildingBlocks.Common.csproj" />
-    <!-- <ProjectReference Include="../../../BuildingBlocks/BuildingBlocks.WebApi/BuildingBlocks.WebApi.csproj" /> -->
+    <ProjectReference Include="../../../Shared/NiesPro.Contracts/NiesPro.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

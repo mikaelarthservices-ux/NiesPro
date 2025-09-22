@@ -1,4 +1,5 @@
 using Catalog.Domain.Entities;
+using NiesPro.Contracts.Infrastructure;
 
 namespace Catalog.Domain.Interfaces
 {

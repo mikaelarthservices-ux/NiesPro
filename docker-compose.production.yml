@@ -1,0 +1,342 @@
+version: '3.8'
+
+name: niespro-production
+
+services:
+  # =================================
+  # BASES DE DONNÉES
+  # =================================
+  mysql:
+    image: mysql:8.0
+    container_name: niespro-mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-NiesPro2024!}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: niespro-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =================================
+  # SERVICES MICROSERVICES OPÉRATIONNELS
+  # =================================
+  stock-api:
+    build:
+      context: .
+      dockerfile: src/Services/Stock/Stock.API/Dockerfile
+    container_name: niespro-stock-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5005;https://+:5006
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Stock;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-NiesPro2024!}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "5005:5005"
+      - "5006:5006"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+      - ./logs/stock:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  auth-api:
+    build:
+      context: .
+      dockerfile: src/Services/Auth/Auth.API/Dockerfile
+    container_name: niespro-auth-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5001;https://+:5011
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Auth;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - ConnectionStrings__Redis=redis:6379
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-NiesPro2024!}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "5001:5001"
+      - "5011:5011"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+      - ./logs/auth:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  catalog-api:
+    build:
+      context: .
+      dockerfile: src/Services/Catalog/Catalog.API/Dockerfile
+    container_name: niespro-catalog-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5003;https://+:5013
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Catalog;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-NiesPro2024!}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "5003:5003"
+      - "5013:5013"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+      - ./logs/catalog:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  order-api:
+    build:
+      context: .
+      dockerfile: src/Services/Order/Order.API/Dockerfile
+    container_name: niespro-order-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5002;https://+:5012
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Order;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - EventStore__ConnectionString=Server=mysql;Port=3306;Database=NiesPro_OrderEventStore;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-NiesPro2024!}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "5002:5002"
+      - "5012:5012"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+      - ./logs/order:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  payment-api:
+    build:
+      context: .
+      dockerfile: src/Services/Payment/Payment.API/Dockerfile
+    container_name: niespro-payment-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5004;https://+:5014
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=NiesPro_Payment;Uid=root;Pwd=${MYSQL_ROOT_PASSWORD:-NiesPro2024!};
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD:-NiesPro2024!}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - Payment__Stripe__SecretKey=${STRIPE_SECRET_KEY}
+      - Payment__PayPal__ClientSecret=${PAYPAL_CLIENT_SECRET}
+      - Payment__Encryption__Key=${PAYMENT_ENCRYPTION_KEY}
+    ports:
+      - "5004:5004"
+      - "5014:5014"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+      - ./logs/payment:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =================================
+  # API GATEWAY
+  # =================================
+  gateway-api:
+    build:
+      context: .
+      dockerfile: src/Gateway/Gateway.API/Dockerfile
+    container_name: niespro-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000;https://+:5010
+      - Gateway__Services__Auth=http://auth-api:5001
+      - Gateway__Services__Catalog=http://catalog-api:5003
+      - Gateway__Services__Order=http://order-api:5002
+      - Gateway__Services__Payment=http://payment-api:5004
+      - Gateway__Services__Stock=http://stock-api:5005
+    ports:
+      - "5000:5000"
+      - "5010:5010"
+    depends_on:
+      auth-api:
+        condition: service_healthy
+      catalog-api:
+        condition: service_healthy
+      order-api:
+        condition: service_healthy
+      payment-api:
+        condition: service_healthy
+      stock-api:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =================================
+  # MONITORING & OBSERVABILITÉ
+  # =================================
+  prometheus:
+    image: prom/prometheus:v2.40.0
+    container_name: niespro-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - niespro-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:9.3.0
+    container_name: niespro-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-NiesPro2024!}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - niespro-network
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: niespro-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.name=niespro-logs
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - niespro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    container_name: niespro-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=niespro-kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - niespro-network
+    restart: unless-stopped
+
+# =================================
+# RÉSEAUX ET VOLUMES
+# =================================
+networks:
+  niespro-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mysql_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

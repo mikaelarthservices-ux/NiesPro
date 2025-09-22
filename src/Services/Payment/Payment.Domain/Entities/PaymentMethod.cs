@@ -1,13 +1,14 @@
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
+using NiesPro.Contracts.Primitives;
 
 namespace Payment.Domain.Entities;
 
 /// <summary>
 /// Entité représentant un moyen de paiement
 /// </summary>
-public class PaymentMethod : BaseEntity
+public class PaymentMethod : Entity
 {
     /// <summary>
     /// Type de moyen de paiement
@@ -85,6 +86,7 @@ public class PaymentMethod : BaseEntity
     /// </summary>
     protected PaymentMethod() 
     {
+        DisplayName = string.Empty;
         Metadata = new Dictionary<string, string>();
     }
 

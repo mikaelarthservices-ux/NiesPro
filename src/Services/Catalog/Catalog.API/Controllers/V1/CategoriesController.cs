@@ -1,7 +1,7 @@
 using Catalog.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using BuildingBlocks.Common.DTOs;
+using NiesPro.Contracts.Common;
 
 namespace Catalog.API.Controllers.V1
 {

@@ -1,4 +1,5 @@
-using BuildingBlocks.Domain;
+using NiesPro.Contracts.Infrastructure;
+using NiesPro.Contracts.Primitives;
 using Stock.Domain.Enums;
 using Stock.Domain.Events;
 using Stock.Domain.ValueObjects;
@@ -321,7 +322,13 @@ public sealed class PurchaseOrderLine : Entity
     public Money TotalCost { get; private set; }
     public string? Notes { get; private set; }
 
-    private PurchaseOrderLine() { } // EF Constructor
+    private PurchaseOrderLine() 
+    { 
+        OrderedQuantity = new StockQuantity(0, "unit");
+        ReceivedQuantity = new StockQuantity(0, "unit");
+        UnitCost = new UnitCost(0, "EUR");
+        TotalCost = new Money(0, "EUR");
+    }
 
     public PurchaseOrderLine(
         Guid purchaseOrderId,

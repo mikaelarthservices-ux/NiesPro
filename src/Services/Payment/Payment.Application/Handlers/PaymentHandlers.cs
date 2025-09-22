@@ -51,6 +51,9 @@ public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Create
             _logger.LogInformation("Creating payment for order {OrderId}, amount {Amount} {Currency}", 
                 request.OrderId, request.Amount, request.Currency);
 
+            // Simulation async pour éliminer warning
+            await Task.Delay(1, cancellationToken);
+
             // Implémentation simplifiée pour les tests
             return new CreatePaymentResult
             {
@@ -118,6 +121,9 @@ public class ProcessPaymentHandler : IRequestHandler<ProcessPaymentCommand, Proc
         {
             _logger.LogInformation("Processing payment request for amount {Amount} {Currency}", 
                 request.Amount ?? 0, request.Currency ?? "EUR");
+
+            // Simulation async pour éliminer warning
+            await Task.Delay(1, cancellationToken);
 
             // Implémentation simplifiée pour les tests
             // TODO: Implémenter la logique complète de traitement des paiements
