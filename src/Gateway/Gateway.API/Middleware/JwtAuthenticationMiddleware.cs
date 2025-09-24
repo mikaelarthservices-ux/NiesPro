@@ -25,7 +25,7 @@ public class JwtAuthenticationMiddleware
         var publicPaths = new[]
         {
             "/health",
-            "/health-ui",
+            "/health-ui", 
             "/swagger",
             "/api/auth/login",
             "/api/auth/register",
@@ -34,10 +34,28 @@ public class JwtAuthenticationMiddleware
             "/api/products" // Catalogue public en lecture
         };
 
-        var path = context.Request.Path.Value?.ToLower() ?? "";
-        var isPublicPath = publicPaths.Any(p => path.StartsWith(p));
+        // Patterns de chemins publics (regex-like)
+        var publicPathPatterns = new[]
+        {
+            "/api/*/health",        // Tous les health checks des services
+            "/api/*/swagger",       // Swagger de tous les services
+            "/*/health",            // Health checks génériques
+            "/*/swagger"            // Swagger génériques
+        };
 
-        if (isPublicPath)
+        var path = context.Request.Path.Value?.ToLower() ?? "";
+        
+        // Vérifier les chemins exacts
+        var isPublicPath = publicPaths.Any(p => path.StartsWith(p));
+        
+        // Vérifier les patterns (health checks des services)
+        var isPublicPattern = publicPathPatterns.Any(pattern => 
+        {
+            var regex = pattern.Replace("*", "[^/]+");
+            return System.Text.RegularExpressions.Regex.IsMatch(path, $"^{regex}");
+        });
+
+        if (isPublicPath || isPublicPattern)
         {
             _logger.LogDebug("Public path accessed: {Path}", path);
             await _next(context);

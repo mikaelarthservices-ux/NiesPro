@@ -1,6 +1,6 @@
 using FluentValidation;
 using Auth.Application.Features.Users.Commands.RegisterUser;
-using Auth.Domain.Interfaces;
+using Auth.Application.Contracts.Services;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser
 {
@@ -9,11 +9,11 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
     /// </summary>
     public class RegisterUserCommandValidator : AbstractValidator<RegisterUserCommand>
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IValidationService _validationService;
 
-        public RegisterUserCommandValidator(IUserRepository userRepository)
+        public RegisterUserCommandValidator(IValidationService validationService)
         {
-            _userRepository = userRepository;
+            _validationService = validationService;
 
             RuleFor(x => x.Username)
                 .NotEmpty().WithMessage("Username is required")
@@ -67,12 +67,12 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
 
         private async Task<bool> BeUniqueUsername(string username, CancellationToken cancellationToken)
         {
-            return !await _userRepository.ExistsByUsernameAsync(username, cancellationToken);
+            return await _validationService.IsUsernameUniqueAsync(username, cancellationToken);
         }
 
         private async Task<bool> BeUniqueEmail(string email, CancellationToken cancellationToken)
         {
-            return !await _userRepository.EmailExistsAsync(email, cancellationToken);
+            return await _validationService.IsEmailUniqueAsync(email, cancellationToken);
         }
     }
 }

@@ -14,11 +14,40 @@ public class HttpProxyMiddleware
 
     private readonly Dictionary<string, string> _routingTable = new()
     {
-        { "/api/auth", "https://localhost:5001" },
-        { "/api/orders", "https://localhost:5002" },
-        { "/api/products", "https://localhost:5003" },
-        { "/api/categories", "https://localhost:5003" },
-        { "/api/brands", "https://localhost:5003" }
+        // Auth Service
+        { "/api/auth", "https://localhost:5011" },
+        { "/api/users", "https://localhost:5011" },
+        { "/api/roles", "https://localhost:5011" },
+        
+        // Catalog Service  
+        { "/api/catalog", "https://localhost:5013" },
+        { "/api/products", "https://localhost:5013" },
+        { "/api/categories", "https://localhost:5013" },
+        { "/api/suppliers", "https://localhost:5013" },
+        
+        // Order Service
+        { "/api/order", "https://localhost:5012" },
+        { "/api/orders", "https://localhost:5012" },
+        { "/api/invoices", "https://localhost:5012" },
+        
+        // Payment Service
+        { "/api/payment", "https://localhost:5014" },
+        { "/api/payments", "https://localhost:5014" },
+        { "/api/payment-methods", "https://localhost:5014" },
+        
+        // Stock Service
+        { "/api/stock", "https://localhost:5006" },
+        { "/api/warehouses", "https://localhost:5006" },
+        { "/api/inventory", "https://localhost:5006" },
+        
+        // Customer Service (à configurer)
+        { "/api/customers", "http://localhost:8001" },
+        { "/api/loyalty", "http://localhost:8001" },
+        
+        // Restaurant Service (à reconstruire)
+        { "/api/tables", "https://localhost:7011" },
+        { "/api/reservations", "https://localhost:7011" },
+        { "/api/menus", "https://localhost:7011" }
     };
 
     public HttpProxyMiddleware(
@@ -54,10 +83,42 @@ public class HttpProxyMiddleware
         }
 
         var targetUrl = route.Value;
-        var targetUri = $"{targetUrl}{path}{context.Request.QueryString}";
+        
+        // Transformer le chemin pour les endpoints des services
+        var transformedPath = path;
+        
+        // Pour les health checks : /api/[service]/health -> /health
+        if (path.Contains("/health"))
+        {
+            transformedPath = "/health";
+        }
+        // Pour les endpoints API : /api/auth/users -> /api/users  
+        else if (path.StartsWith("/api/auth/") && !path.StartsWith("/api/auth/health"))
+        {
+            transformedPath = path.Replace("/api/auth", "/api");
+        }
+        // Pour les autres services, enlever le préfixe service
+        else if (path.StartsWith("/api/products/"))
+        {
+            transformedPath = path.Replace("/api/products", "/api/products");
+        }
+        else if (path.StartsWith("/api/stock/"))
+        {
+            transformedPath = path.Replace("/api/stock", "/api/stock");
+        }
+        else if (path.StartsWith("/api/orders/"))
+        {
+            transformedPath = path.Replace("/api/orders", "/api/orders");
+        }
+        else if (path.StartsWith("/api/payments/"))
+        {
+            transformedPath = path.Replace("/api/payments", "/api/payments");
+        }
+        
+        var targetUri = $"{targetUrl}{transformedPath}{context.Request.QueryString}";
 
-        _logger.LogInformation("Proxying request: {Method} {Path} -> {TargetUri}", 
-            context.Request.Method, path, targetUri);
+        _logger.LogInformation("Proxying request: {Method} {Path} -> {TargetUri} (transformed: {TransformedPath})", 
+            context.Request.Method, path, targetUri, transformedPath);
 
         try
         {

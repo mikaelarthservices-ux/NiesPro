@@ -19,8 +19,14 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<AuthDbContext>(options =>
         {
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21)));
+            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 21)))
+                   .EnableSensitiveDataLogging(false) // Désactiver en production
+                   .EnableDetailedErrors(false); // Désactiver en production
         });
+
+
+
+
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -34,6 +40,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordService, PasswordServiceAdapter>();
         services.AddScoped<IJwtService, JwtServiceAdapter>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
+        // Validation Services
+        services.AddScoped<IValidationService, ValidationService>();
 
         return services;
     }

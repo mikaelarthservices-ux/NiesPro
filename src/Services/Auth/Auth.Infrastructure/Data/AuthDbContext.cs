@@ -39,6 +39,20 @@ namespace Auth.Infrastructure.Data
             modelBuilder.Entity<Device>().ToTable("Devices");
             modelBuilder.Entity<UserSession>().ToTable("UserSessions");
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
+
+            // Ignore audit columns that don't exist in database yet
+            modelBuilder.Entity<User>().Ignore(u => u.CreatedBy);
+            modelBuilder.Entity<User>().Ignore(u => u.UpdatedBy);
+            modelBuilder.Entity<Role>().Ignore(r => r.CreatedBy);
+            modelBuilder.Entity<Role>().Ignore(r => r.UpdatedBy);
+            modelBuilder.Entity<Permission>().Ignore(p => p.CreatedBy);
+            modelBuilder.Entity<Permission>().Ignore(p => p.UpdatedBy);
+            modelBuilder.Entity<Device>().Ignore(d => d.CreatedBy);
+            modelBuilder.Entity<Device>().Ignore(d => d.UpdatedBy);
+            modelBuilder.Entity<UserSession>().Ignore(s => s.CreatedBy);
+            modelBuilder.Entity<UserSession>().Ignore(s => s.UpdatedBy);
+            modelBuilder.Entity<AuditLog>().Ignore(a => a.CreatedBy);
+            modelBuilder.Entity<AuditLog>().Ignore(a => a.UpdatedBy);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

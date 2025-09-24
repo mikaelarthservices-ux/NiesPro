@@ -1,0 +1,241 @@
+﻿{
+    "Summary":  {
+                    "UserDatabases":  8,
+                    "TotalTables":  34,
+                    "TotalDatabases":  12,
+                    "BasesWithData":  0,
+                    "TotalRows":  0,
+                    "NiesproDatabases":  5
+                },
+    "NiesproAnalysis":  [
+                            {
+                                "Info":  {
+                                             "HasData":  false,
+                                             "Tables":  [
+                                                            {
+                                                                "RowCount":  1,
+                                                                "Name":  "__efmigrationshistory"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "auditlogs"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "devices"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "permissions"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "rolepermissions"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "roles"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "userroles"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "users"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "usersessions"
+                                                            }
+                                                        ],
+                                             "TableCount":  9,
+                                             "Name":  "niespro_auth",
+                                             "TotalRows":  null
+                                         },
+                                "Database":  "niespro_auth",
+                                "Service":  "Auth.API",
+                                "Migrations":  {
+                                                   "ProductVersion":  "8.0.7",
+                                                   "MigrationId":  "20250916133125_InitialAuthCreateMySQLFinal"
+                                               }
+                            },
+                            {
+                                "Info":  {
+                                             "HasData":  false,
+                                             "Tables":  [
+                                                            {
+                                                                "RowCount":  1,
+                                                                "Name":  "__efmigrationshistory"
+                                                            },
+                                                            {
+                                                                "RowCount":  2,
+                                                                "Name":  "brands"
+                                                            },
+                                                            {
+                                                                "RowCount":  2,
+                                                                "Name":  "categories"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "productattributes"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "products"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "productvariants"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "reviews"
+                                                            }
+                                                        ],
+                                             "TableCount":  7,
+                                             "Name":  "niespro_catalog",
+                                             "TotalRows":  null
+                                         },
+                                "Database":  "niespro_catalog",
+                                "Service":  "Catalog.API",
+                                "Migrations":  {
+                                                   "ProductVersion":  "8.0.2",
+                                                   "MigrationId":  "20250916134924_InitialCatalogCreateMySQL"
+                                               }
+                            },
+                            {
+                                "Info":  {
+                                             "HasData":  false,
+                                             "Tables":  [
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "customeraddresses"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "customerpreferences"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "customers"
+                                                            }
+                                                        ],
+                                             "TableCount":  3,
+                                             "Name":  "niespro_customer",
+                                             "TotalRows":  null
+                                         },
+                                "Database":  "niespro_customer",
+                                "Service":  "Customer.API",
+                                "Migrations":  {
+
+                                               }
+                            },
+                            {
+                                "Info":  {
+                                             "HasData":  false,
+                                             "Tables":  [
+                                                            {
+                                                                "RowCount":  1,
+                                                                "Name":  "__efmigrationshistory"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "eventstore"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_customerinfo"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order.billingaddress#address"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order.discountamount#money"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order.shippingaddress#address"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order.shippingcost#money"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_order.taxamount#money"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_orderitem"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_orderitem.unitprice#money"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_payment"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_payment.amount#money"
+                                                            },
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "order_payment.refundedamount#money"
+                                                            }
+                                                        ],
+                                             "TableCount":  14,
+                                             "Name":  "niespro_order_dev",
+                                             "TotalRows":  null
+                                         },
+                                "Database":  "niespro_order_dev",
+                                "Service":  "Order.API",
+                                "Migrations":  {
+                                                   "ProductVersion":  "8.0.2",
+                                                   "MigrationId":  "20250916131558_InitialOrderCreateMySQL"
+                                               }
+                            },
+                            {
+                                "Info":  {
+                                             "HasData":  false,
+                                             "Tables":  [
+                                                            {
+                                                                "RowCount":  0,
+                                                                "Name":  "__efmigrationshistory"
+                                                            }
+                                                        ],
+                                             "TableCount":  1,
+                                             "Name":  "niespro_payment_dev",
+                                             "TotalRows":  null
+                                         },
+                                "Database":  "niespro_payment_dev",
+                                "Service":  "Payment.API",
+                                "Migrations":  {
+
+                                               }
+                            }
+                        ],
+    "Timestamp":  "2025-09-24 09:37:48",
+    "AllDatabases":  [
+                         "agent_ia_evolutif",
+                         "eseris_development",
+                         "fne_manager",
+                         "information_schema",
+                         "mysql",
+                         "niespro_auth",
+                         "niespro_catalog",
+                         "niespro_customer",
+                         "niespro_order_dev",
+                         "niespro_payment_dev",
+                         "performance_schema",
+                         "sys"
+                     ]
+}
