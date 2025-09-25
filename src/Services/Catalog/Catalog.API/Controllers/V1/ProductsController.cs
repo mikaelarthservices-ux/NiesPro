@@ -1,6 +1,9 @@
 using Catalog.Application.DTOs;
 using Catalog.Application.Features.Products.Commands.CreateProduct;
+using Catalog.Application.Features.Products.Commands.UpdateProduct;
+using Catalog.Application.Features.Products.Commands.DeleteProduct;
 using Catalog.Application.Features.Products.Queries.GetProducts;
+using Catalog.Application.Features.Products.Queries.GetProductById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NiesPro.Contracts.Common;
@@ -25,44 +28,44 @@ namespace Catalog.API.Controllers.V1
         }
 
         /// <summary>
-        /// Get products with filtering and pagination
+        /// Get all products with optional filtering and pagination
         /// </summary>
-        /// <param name="searchTerm">Search term for product name or description</param>
-        /// <param name="categoryId">Filter by category ID</param>
-        /// <param name="brandId">Filter by brand ID</param>
+        /// <param name="categoryId">Filter by category</param>
+        /// <param name="brandId">Filter by brand</param>
+        /// <param name="searchTerm">Search term</param>
         /// <param name="minPrice">Minimum price filter</param>
         /// <param name="maxPrice">Maximum price filter</param>
-        /// <param name="inStockOnly">Filter only products in stock</param>
-        /// <param name="featuredOnly">Filter only featured products</param>
-        /// <param name="sortBy">Sort by field (name, price, newest)</param>
-        /// <param name="page">Page number</param>
+        /// <param name="sortBy">Sort field</param>
+        /// <param name="pageNumber">Page number</param>
         /// <param name="pageSize">Page size</param>
+        /// <param name="onlyActive">Only active products</param>
+        /// <param name="onlyFeatured">Only featured products</param>
         /// <returns>Paginated list of products</returns>
         [HttpGet]
         public async Task<ActionResult<ApiResponse<PagedResultDto<ProductSummaryDto>>>> GetProducts(
-            [FromQuery] string? searchTerm = null,
             [FromQuery] Guid? categoryId = null,
             [FromQuery] Guid? brandId = null,
+            [FromQuery] string? searchTerm = null,
             [FromQuery] decimal? minPrice = null,
             [FromQuery] decimal? maxPrice = null,
-            [FromQuery] bool? inStockOnly = null,
-            [FromQuery] bool? featuredOnly = null,
-            [FromQuery] string? sortBy = "name",
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+            [FromQuery] string? sortBy = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] bool onlyActive = true,
+            [FromQuery] bool onlyFeatured = false)
         {
             var query = new GetProductsQuery
             {
-                SearchTerm = searchTerm,
                 CategoryId = categoryId,
                 BrandId = brandId,
+                SearchTerm = searchTerm,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
-                InStockOnly = inStockOnly,
-                FeaturedOnly = featuredOnly,
                 SortBy = sortBy,
-                Page = page,
-                PageSize = pageSize
+                Page = pageNumber,
+                PageSize = pageSize,
+                InStockOnly = onlyActive ? true : null,
+                FeaturedOnly = onlyFeatured ? true : null
             };
 
             var result = await _mediator.Send(query);
@@ -83,10 +86,26 @@ namespace Catalog.API.Controllers.V1
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<ProductDto>>> GetProduct(Guid id)
         {
-            // TODO: Implement GetProductByIdQuery
-            _logger.LogInformation("Getting product with ID: {ProductId}", id);
+            // Validate GUID format
+            if (id == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<ProductDto>.CreateError("Invalid product ID"));
+            }
+
+            var query = new GetProductByIdQuery(id);
+            var result = await _mediator.Send(query);
             
-            return NotFound(ApiResponse<ProductDto>.CreateError("Product not found"));
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            if (result.Errors?.Any() == true && result.Errors.First().Contains("not found"))
+            {
+                return NotFound(result);
+            }
+
+            return BadRequest(result);
         }
 
         /// <summary>
@@ -101,70 +120,63 @@ namespace Catalog.API.Controllers.V1
             
             if (result.IsSuccess)
             {
-                return CreatedAtAction(nameof(GetProduct), new { id = result.Data?.Id }, result);
+                return CreatedAtAction(nameof(GetProduct), new { id = result.Data!.Id }, result);
             }
 
             return BadRequest(result);
         }
 
         /// <summary>
-        /// Update product
+        /// Update an existing product
         /// </summary>
         /// <param name="id">Product ID</param>
         /// <param name="command">Product update data</param>
         /// <returns>Updated product</returns>
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<ProductDto>>> UpdateProduct(Guid id, [FromBody] UpdateProductDto command)
+        public async Task<ActionResult<ApiResponse<ProductDto>>> UpdateProduct(Guid id, [FromBody] UpdateProductCommand command)
         {
-            // TODO: Implement UpdateProductCommand
-            _logger.LogInformation("Updating product with ID: {ProductId}", id);
+            if (id != command.Id)
+            {
+                return BadRequest(ApiResponse<ProductDto>.CreateError("Product ID in URL does not match request body"));
+            }
+
+            var result = await _mediator.Send(command);
             
-            return NotFound(ApiResponse<ProductDto>.CreateError("Update functionality not implemented yet"));
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            if (result.Errors?.Any() == true && result.Errors.First().Contains("not found"))
+            {
+                return NotFound(result);
+            }
+
+            return BadRequest(result);
         }
 
         /// <summary>
-        /// Delete product
+        /// Delete a product (soft delete)
         /// </summary>
         /// <param name="id">Product ID</param>
-        /// <returns>Result of deletion</returns>
+        /// <returns>Deletion result</returns>
         [HttpDelete("{id:guid}")]
-        public async Task<ActionResult<ApiResponse<string>>> DeleteProduct(Guid id)
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteProduct(Guid id)
         {
-            // TODO: Implement DeleteProductCommand
-            _logger.LogInformation("Deleting product with ID: {ProductId}", id);
+            var command = new DeleteProductCommand(id);
+            var result = await _mediator.Send(command);
             
-            return NotFound(ApiResponse<string>.CreateError("Delete functionality not implemented yet"));
-        }
+            if (result.IsSuccess)
+            {
+                return NoContent(); // HTTP 204 for successful deletion
+            }
 
-        /// <summary>
-        /// Update product stock
-        /// </summary>
-        /// <param name="id">Product ID</param>
-        /// <param name="stockUpdate">Stock update data</param>
-        /// <returns>Result of stock update</returns>
-        [HttpPatch("{id:guid}/stock")]
-        public async Task<ActionResult<ApiResponse<string>>> UpdateStock(Guid id, [FromBody] UpdateStockDto stockUpdate)
-        {
-            // TODO: Implement UpdateStockCommand
-            _logger.LogInformation("Updating stock for product ID: {ProductId}", id);
-            
-            return NotFound(ApiResponse<string>.CreateError("Stock update functionality not implemented yet"));
-        }
+            if (result.Errors?.Any() == true && result.Errors.First().Contains("not found"))
+            {
+                return NotFound(result);
+            }
 
-        /// <summary>
-        /// Get featured products
-        /// </summary>
-        /// <param name="count">Number of featured products to return</param>
-        /// <returns>List of featured products</returns>
-        [HttpGet("featured")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<ProductSummaryDto>>>> GetFeaturedProducts([FromQuery] int count = 10)
-        {
-            // TODO: Implement GetFeaturedProductsQuery
-            _logger.LogInformation("Getting {Count} featured products", count);
-            
-            return Ok(ApiResponse<IEnumerable<ProductSummaryDto>>.CreateSuccess(
-                new List<ProductSummaryDto>(), 
-                "Featured products functionality not implemented yet"));
+            return BadRequest(result);
         }
     }
 }

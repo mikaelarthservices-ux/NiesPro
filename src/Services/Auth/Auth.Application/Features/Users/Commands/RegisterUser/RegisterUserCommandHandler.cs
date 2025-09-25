@@ -43,9 +43,25 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             {
                 _logger.LogInformation("Processing user registration for email: {Email}", request.Email);
 
+                // 1. Validate email uniqueness
+                var existingEmail = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+                if (existingEmail != null)
+                {
+                    _logger.LogWarning("Registration attempt with existing email: {Email}", request.Email);
+                    return ApiResponse<RegisterUserResponse>.CreateError("Email is already registered");
+                }
+
+                // 2. Validate username uniqueness
+                var existingUsername = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
+                if (existingUsername != null)
+                {
+                    _logger.LogWarning("Registration attempt with existing username: {Username}", request.Username);
+                    return ApiResponse<RegisterUserResponse>.CreateError("Username is already taken");
+                }
+
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-                // 1. Create new user entity
+                // 3. Create new user entity
                 var user = new User
                 {
                     Id = Guid.NewGuid(),
@@ -60,10 +76,10 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // 2. Save user to database
+                // 4. Save user to database
                 var createdUser = await _userRepository.AddAsync(user, cancellationToken);
 
-                // 3. Assign default "User" role
+                // 5. Assign default "User" role
                 var defaultRole = await _roleRepository.GetByNameAsync("User", cancellationToken);
                 if (defaultRole != null)
                 {
@@ -78,7 +94,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                     _logger.LogInformation("Default role assigned to user: {UserId}", createdUser.Id);
                 }
 
-                // 4. Register user's device
+                // 6. Register user's device
                 var device = new Device
                 {
                     Id = Guid.NewGuid(),
@@ -95,7 +111,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
 
                 await _deviceRepository.AddAsync(device, cancellationToken);
 
-                // 5. Create audit log entry
+                // 7. Create audit log entry
                 var auditLog = new AuditLog
                 {
                     Id = Guid.NewGuid(),
@@ -117,7 +133,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
 
                 _logger.LogInformation("User registration successful for: {UserId}", createdUser.Id);
 
-                // 6. Create response
+                // 8. Create response
                 var response = new RegisterUserResponse
                 {
                     UserId = createdUser.Id,

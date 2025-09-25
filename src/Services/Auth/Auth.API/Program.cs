@@ -38,3 +38,9 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make Program class accessible for testing
+namespace Auth.API
+{
+    public partial class Program { }
+}

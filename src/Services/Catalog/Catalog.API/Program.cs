@@ -1,5 +1,6 @@
 using Catalog.Application.Extensions;
 using Catalog.Infrastructure.Extensions;
+using Catalog.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,10 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+// Global exception handling (must be first)
+app.UseGlobalExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -52,3 +57,8 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+/// <summary>
+/// Program class for testing accessibility
+/// </summary>
+public partial class Program { }

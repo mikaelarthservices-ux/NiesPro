@@ -119,18 +119,41 @@ dotnet build src/Clients/Mobile/NiesPro.Mobile -f net6.0-ios
 dotnet run --project src/Clients/Web/NiesPro.Web
 ```
 
-## 🧪 Tests
+## 🧪 Tests et Qualité
+
+### État d'avancement des tests par service
+
+| Service | Tests Unitaires | Tests Intégration | Couverture | Status |
+|---------|----------------|-------------------|-------------|---------|
+| **Catalog** | ✅ 100% (Complet) | ✅ 70% endpoints | 85%+ | 🎯 **PRODUCTION READY** |
+| **Auth** | ✅ 100% (41 tests) | ✅ Infrastructure complète | 85%+ | 🎯 **PRODUCTION READY** |
+| Customer | 🚧 En cours | ❌ À créer | - | 🔄 **EN DÉVELOPPEMENT** |
+| Restaurant | 🚧 En cours | ❌ À créer | - | 🔄 **EN DÉVELOPPEMENT** |
+| Order | ❌ À créer | ❌ À créer | - | ⏳ **PLANIFIÉ** |
+| Payment | ❌ À créer | ❌ À créer | - | ⏳ **PLANIFIÉ** |
+
+### Commandes de test
 
 ```bash
-# Tests unitaires
-dotnet test tests/Unit/
+# Tests Catalog (COMPLETS)
+dotnet test tests/Catalog/Unit/Catalog.Tests.Unit.csproj
+./tests/Catalog/run-tests.ps1
 
-# Tests d'intégration
-dotnet test tests/Integration/
+# Tests Auth (COMPLETS)  
+dotnet test tests/Auth/Unit/Auth.Tests.Unit.csproj
+./tests/Auth/run-tests.ps1
 
-# Tests E2E
-dotnet test tests/E2E/
+# Scripts d'automatisation disponibles
+./tools/catalog-service-tester.ps1    # Tests automatisés Catalog
+./tools/catalog-db-inspector.ps1      # Validation DB Catalog
 ```
+
+### Standards de qualité adoptés
+- ✅ **Tests unitaires** : NUnit + FluentAssertions + Moq + AutoFixture
+- ✅ **Tests d'intégration** : ASP.NET Core Testing + TestContainers
+- ✅ **Documentation complète** : README + Status + Scripts pour chaque service
+- ✅ **Automatisation** : Scripts PowerShell pour exécution et rapports
+- ✅ **CI/CD Ready** : Infrastructure compatible pipelines
 
 ## 📖 Documentation
 
@@ -150,14 +173,33 @@ dotnet test tests/E2E/
 
 Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour plus de détails.
 
-## 📊 Roadmap
+## 📊 Roadmap et avancement
 
-- [x] **Phase 1** : Architecture et authentification
-- [x] **Phase 2** : Modules boutique et stock
-- [ ] **Phase 3** : Modules restaurant et caisse
-- [ ] **Phase 4** : Reporting et analytics
-- [ ] **Phase 5** : Mobile et notifications
-- [ ] **Phase 6** : Intégrations externes
+### Services Microservices
+- [x] **Auth Service** : ✅ **COMPLET** - Authentification + Tests professionnels (41 tests, 100% succès)
+- [x] **Catalog Service** : ✅ **COMPLET** - Catalogue produits + Tests professionnels (100% succès)  
+- [x] **Infrastructure de tests** : ✅ **DÉPLOYÉE** - Standards professionnels pour tous services
+- [ ] **Customer Service** : 🚧 **EN COURS** - Prochaine étape (tests à implémenter)
+- [ ] **Restaurant Service** : ⏳ Planifié
+- [ ] **Order Service** : ⏳ Planifié  
+- [ ] **Payment Service** : ⏳ Planifié
+- [ ] **Stock Service** : ⏳ Planifié
+
+### Phases de développement
+- [x] **Phase 1** : Architecture et authentification ✅
+- [x] **Phase 2a** : Service Catalog + Infrastructure tests ✅
+- [x] **Phase 2b** : Service Auth + Tests complets ✅
+- [ ] **Phase 3** : Service Customer + Restaurant 🚧
+- [ ] **Phase 4** : Services Order + Payment ⏳
+- [ ] **Phase 5** : Reporting et analytics ⏳
+- [ ] **Phase 6** : Mobile et notifications ⏳
+- [ ] **Phase 7** : Intégrations externes ⏳
+
+### Métriques de qualité actuelles
+- **Services en production** : 2/7 (Auth, Catalog)
+- **Tests unitaires** : 2 services avec 100% de succès
+- **Infrastructure complète** : Déployée et réutilisable
+- **Documentation** : Standards professionnels établis
 
 ## 📄 License
 

@@ -1,4 +1,7 @@
 using Catalog.Application.DTOs;
+using Catalog.Application.Features.Categories.Commands.CreateCategory;
+using Catalog.Application.Features.Categories.Queries.GetCategories;
+using Catalog.Application.Features.Categories.Queries.GetCategoryById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NiesPro.Contracts.Common;
@@ -29,12 +32,15 @@ namespace Catalog.API.Controllers.V1
         [HttpGet]
         public async Task<ActionResult<ApiResponse<IEnumerable<CategoryDto>>>> GetCategories()
         {
-            // TODO: Implement GetCategoriesQuery
-            _logger.LogInformation("Getting all categories");
+            var query = new GetCategoriesQuery();
+            var result = await _mediator.Send(query);
             
-            return Ok(ApiResponse<IEnumerable<CategoryDto>>.CreateSuccess(
-                new List<CategoryDto>(), 
-                "Categories functionality not implemented yet"));
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
         }
 
         /// <summary>
@@ -45,10 +51,20 @@ namespace Catalog.API.Controllers.V1
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ApiResponse<CategoryDto>>> GetCategory(Guid id)
         {
-            // TODO: Implement GetCategoryByIdQuery
-            _logger.LogInformation("Getting category with ID: {CategoryId}", id);
+            var query = new GetCategoryByIdQuery(id);
+            var result = await _mediator.Send(query);
             
-            return NotFound(ApiResponse<CategoryDto>.CreateError("Category not found"));
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            if (result.Message == "Category not found")
+            {
+                return NotFound(result);
+            }
+
+            return BadRequest(result);
         }
 
         /// <summary>
@@ -58,26 +74,33 @@ namespace Catalog.API.Controllers.V1
         [HttpGet("root")]
         public async Task<ActionResult<ApiResponse<IEnumerable<CategoryDto>>>> GetRootCategories()
         {
-            // TODO: Implement GetRootCategoriesQuery
-            _logger.LogInformation("Getting root categories");
+            var query = new GetCategoriesQuery { RootOnly = true };
+            var result = await _mediator.Send(query);
             
-            return Ok(ApiResponse<IEnumerable<CategoryDto>>.CreateSuccess(
-                new List<CategoryDto>(), 
-                "Root categories functionality not implemented yet"));
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
         }
 
         /// <summary>
         /// Create a new category
         /// </summary>
-        /// <param name="command">Category creation data</param>
+        /// <param name="request">Category creation data</param>
         /// <returns>Created category</returns>
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<CategoryDto>>> CreateCategory([FromBody] CreateCategoryDto command)
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> CreateCategory([FromBody] CreateCategoryCommand request)
         {
-            // TODO: Implement CreateCategoryCommand
-            _logger.LogInformation("Creating new category: {CategoryName}", command.Name);
+            var result = await _mediator.Send(request);
             
-            return BadRequest(ApiResponse<CategoryDto>.CreateError("Create category functionality not implemented yet"));
+            if (result.IsSuccess)
+            {
+                return CreatedAtAction(nameof(GetCategory), new { id = result.Data?.Id }, result);
+            }
+
+            return BadRequest(result);
         }
     }
 }
