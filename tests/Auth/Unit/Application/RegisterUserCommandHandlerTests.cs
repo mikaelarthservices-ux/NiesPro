@@ -8,6 +8,7 @@ using Auth.Domain.Interfaces;
 using Auth.Application.Contracts.Services;
 using Auth.Domain.Entities;
 using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
 
 namespace Auth.Tests.Unit.Application;
 
@@ -24,6 +25,8 @@ public class RegisterUserCommandHandlerTests
     private Mock<IPasswordService> _mockPasswordService;
     private Mock<IUnitOfWork> _mockUnitOfWork;
     private Mock<ILogger<RegisterUserCommandHandler>> _mockLogger;
+    private Mock<ILogsServiceClient> _mockLogsService;
+    private Mock<IAuditServiceClient> _mockAuditService;
     private RegisterUserCommandHandler _handler;
 
     [SetUp]
@@ -40,6 +43,8 @@ public class RegisterUserCommandHandlerTests
         _mockPasswordService = new Mock<IPasswordService>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockLogger = new Mock<ILogger<RegisterUserCommandHandler>>();
+        _mockLogsService = new Mock<ILogsServiceClient>();
+        _mockAuditService = new Mock<IAuditServiceClient>();
 
         _handler = new RegisterUserCommandHandler(
             _mockUserRepository.Object,
@@ -47,7 +52,9 @@ public class RegisterUserCommandHandlerTests
             _mockDeviceRepository.Object,
             _mockPasswordService.Object,
             _mockUnitOfWork.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockLogsService.Object,
+            _mockAuditService.Object
         );
     }
 
@@ -112,6 +119,22 @@ public class RegisterUserCommandHandlerTests
 
         _mockPasswordService.Verify(x => x.HashPassword(command.Password), Times.Once);
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        
+        // Verify NiesPro Logging integration
+        _mockAuditService.Verify(x => x.AuditCreateAsync(
+            It.IsAny<string>(), // userId
+            It.IsAny<string>(), // userName
+            "User",             // entityName
+            It.IsAny<string>(), // entityId
+            It.IsAny<Dictionary<string, object>>()), // metadata
+            Times.Once);
+            
+        _mockLogsService.Verify(x => x.LogAsync(
+            LogLevel.Information,
+            It.Is<string>(s => s.Contains("User registration successful")),
+            null, // exception
+            It.IsAny<Dictionary<string, object>>()), // properties
+            Times.Once);
     }
 
     [Test]
@@ -197,6 +220,13 @@ public class RegisterUserCommandHandlerTests
 
         // Verify rollback was attempted
         _mockUnitOfWork.Verify(x => x.RollbackTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        
+        // Verify error logging was called
+        _mockLogsService.Verify(x => x.LogErrorAsync(
+            It.IsAny<Exception>(),
+            It.Is<string>(s => s.Contains("Error during user registration")),
+            It.IsAny<Dictionary<string, object>>()), 
+            Times.Once);
     }
 
     [Test]

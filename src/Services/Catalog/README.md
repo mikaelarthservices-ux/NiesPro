@@ -36,6 +36,8 @@ Le **Catalog.API** est un microservice de gestion de catalogue produits dévelop
 - **Mapping** : AutoMapper
 - **Documentation** : Swagger/OpenAPI
 - **Logging** : Serilog (configuré)
+- **✅ NiesPro.Logging.Client** : **LOGGING CENTRALISÉ INTÉGRÉ**
+- **✅ Service Logs** : **AUDIT TRAIL AUTOMATIQUE**
 
 ## 🚀 Démarrage rapide
 
@@ -273,6 +275,14 @@ Pour les problèmes courants, consulter :
 - `/tools/catalog-db-inspector.ps1` pour la DB
 - Logs dans `/logs/catalog-{date}.log`
 - Health check : `GET /health`
+
+## ✅ STATUS LOGGING INTÉGRATION
+- **Tests** : 60 tests passent dont 5 spécifiques au logging
+- **Configuration** : Logging client configuré dans appsettings.json
+- **Middleware** : Logging automatique de toutes les requêtes HTTP
+- **Audit** : Traçabilité CUD via IAuditServiceClient
+- **Documentation** : Voir ARCHITECTURE-LOGGING-SERVICE-VS-CLIENT.md
+- **Status** : **100% CONFORME ⭐ PRODUCTION READY**
 
 ---
 

@@ -18,13 +18,14 @@
     <PackageReference Include="Moq" Version="4.20.69" />
     <PackageReference Include="AutoFixture" Version="4.18.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Services\Auth\Auth.Domain\Auth.Domain.csproj" />
     <ProjectReference Include="..\..\..\src\Services\Auth\Auth.Application\Auth.Application.csproj" />
     <ProjectReference Include="..\..\..\src\Services\Auth\Auth.Infrastructure\Auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Shared\NiesPro.Logging.Client\NiesPro.Logging.Client.csproj" />
   </ItemGroup>
 
 </Project>

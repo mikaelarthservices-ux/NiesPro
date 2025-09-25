@@ -1,6 +1,8 @@
 using Auth.API.Extensions;
 using Auth.Application.Extensions;
 using Auth.Infrastructure.Extensions;
+using NiesPro.Logging.Client;
+using NiesPro.Logging.Client.Middleware;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,9 +22,15 @@ try
     builder.Services.AddApiServices(builder.Configuration);
     builder.Services.AddAuthApplication();
     builder.Services.AddInfrastructureServices(builder.Configuration);
+    
+    // Configuration du service de logging centralisé NiesPro OBLIGATOIRE
+    builder.Services.AddNiesProLogging(builder.Configuration);
 
     var app = builder.Build();
 
+    // Ajout du middleware de logging NiesPro OBLIGATOIRE (en premier pour capturer toutes les requêtes)
+    app.UseNiesProLogging();
+    
     app.UseApiMiddleware();
     
     Log.Information("Application Auth.API démarrée avec succès");

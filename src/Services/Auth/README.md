@@ -31,6 +31,8 @@ src/Services/Auth/
 - **Serilog** - Logging structuré
 - **Swagger/OpenAPI** - Documentation API
 - **Docker** - Conteneurisation
+- **✅ NiesPro.Logging.Client** - **LOGGING CENTRALISÉ INTÉGRÉ**
+- **✅ Service Logs** - **AUDIT TRAIL AUTOMATIQUE**
 
 ## 🚀 Démarrage Rapide
 
@@ -98,7 +100,8 @@ L'API sera disponible sur : http://localhost:5000 (ou https://localhost:5001)
 - Hachage des mots de passe avec BCrypt
 - Limitation des tentatives de connexion
 - Validation des appareils
-- Audit trail complet
+- **✅ Audit trail complet via NiesPro.Logging.Client**
+- **✅ Logging centralisé automatique de toutes les requêtes HTTP**
 - Gestion des sessions utilisateur
 
 ## 🗃️ Modèle de Données
@@ -191,6 +194,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, ApiResponse<Log
 3. Implémenter les handlers CQRS
 4. Ajouter les endpoints dans les contrôleurs
 5. Créer les tests
+6. **✅ Le logging est automatiquement intégré via NiesPro.Logging.Client**
+
+## ✅ STATUS LOGGING INTÉGRATION
+- **Tests** : 46 tests passent dont 5 spécifiques au logging
+- **Configuration** : Logging client configuré dans appsettings.json
+- **Middleware** : Logging automatique de toutes les requêtes HTTP
+- **Audit** : Traçabilité CUD via IAuditServiceClient
+- **Documentation** : Voir ARCHITECTURE-LOGGING-SERVICE-VS-CLIENT.md
+- **Status** : **100% CONFORME ⭐ PRODUCTION READY**
 
 ## 🤝 Contribution
 

@@ -43,6 +43,14 @@ NiesPro ERP est une **solution enterprise** de gestion intégrée pour boutiques
 
 ## ✨ Fonctionnalités principales
 
+### 📊 **LOGGING CENTRALISÉ** ✅ **INTÉGRÉ**
+- **Service Logs** : API centralisée (port 5018) avec MySQL + Elasticsearch
+- **NiesPro.Logging.Client** : Bibliothèque partagée pour tous les services
+- **Audit trail automatique** : Traçabilité complète des actions CUD
+- **Monitoring en temps réel** : Métriques et alertes système
+- **Recherche avancée** : Full-text search avec Elasticsearch
+- **Status intégration** : Auth ✅ 100% | Catalog ✅ 100% | Order 🔄 Prochaine | Autres ❌ À faire
+
 ### 🏪 Gestion Boutique
 - Catalogue produits avec variantes et codes-barres
 - Multi-magasin et points de vente (POS)
@@ -90,7 +98,7 @@ NiesPro ERP est une **solution enterprise** de gestion intégrée pour boutiques
 - **Double authentification** : Login/mot de passe + empreinte terminal
 - **Gestion des rôles** : Admin, Manager, Serveur, Caissier, Stockiste
 - **Chiffrement** : HTTPS, JWT, chiffrement des données sensibles
-- **Audit complet** : Logs centralisés de toutes les actions
+- **Audit complet** : ✅ **LOGS CENTRALISÉS INTÉGRÉS** (Service Logs + Client partagé)
 - **Mode offline** : Synchronisation sécurisée au retour
 
 ## 🚀 Installation

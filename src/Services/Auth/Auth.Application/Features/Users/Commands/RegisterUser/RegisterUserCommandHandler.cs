@@ -6,6 +6,7 @@ using Auth.Application.Contracts.Services;
 using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 using Auth.Domain.Entities;
+using NiesPro.Logging.Client;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser
 {
@@ -20,6 +21,8 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
         private readonly IPasswordService _passwordService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<RegisterUserCommandHandler> _logger;
+        private readonly ILogsServiceClient _logsService;
+        private readonly IAuditServiceClient _auditService;
 
         public RegisterUserCommandHandler(
             IUserRepository userRepository,
@@ -27,7 +30,9 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             IDeviceRepository deviceRepository,
             IPasswordService passwordService,
             IUnitOfWork unitOfWork,
-            ILogger<RegisterUserCommandHandler> logger)
+            ILogger<RegisterUserCommandHandler> logger,
+            ILogsServiceClient logsService,
+            IAuditServiceClient auditService)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -35,6 +40,8 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             _passwordService = passwordService;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _logsService = logsService;
+            _auditService = auditService;
         }
 
         public async Task<ApiResponse<RegisterUserResponse>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -79,20 +86,19 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                 // 4. Save user to database
                 var createdUser = await _userRepository.AddAsync(user, cancellationToken);
 
-                // 5. Assign default "User" role
-                var defaultRole = await _roleRepository.GetByNameAsync("User", cancellationToken);
-                if (defaultRole != null)
-                {
-                    var userRole = new UserRole
-                    {
-                        UserId = createdUser.Id,
-                        RoleId = defaultRole.Id,
-                        AssignedAt = DateTime.UtcNow
-                    };
-
-                    // Note: UserRole creation would need a repository - simplified for now
-                    _logger.LogInformation("Default role assigned to user: {UserId}", createdUser.Id);
-                }
+                // 5. Assign default "User" role - TODO: Implement UserRole repository
+                // var defaultRole = await _roleRepository.GetByNameAsync("User", cancellationToken);
+                // if (defaultRole != null)
+                // {
+                //     var userRole = new UserRole
+                //     {
+                //         UserId = createdUser.Id,
+                //         RoleId = defaultRole.Id,
+                //         AssignedAt = DateTime.UtcNow
+                //     };
+                //     await _userRoleRepository.AddAsync(userRole, cancellationToken);
+                //     _logger.LogInformation("Default role assigned to user: {UserId}", createdUser.Id);
+                // }
 
                 // 6. Register user's device
                 var device = new Device
@@ -111,27 +117,41 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
 
                 await _deviceRepository.AddAsync(device, cancellationToken);
 
-                // 7. Create audit log entry
-                var auditLog = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = createdUser.Id,
-                    DeviceId = device.Id,
-                    Action = "USER_REGISTERED",
-                    EntityType = "User",
-                    EntityId = createdUser.Id.ToString(),
-                    NewValues = $"New user registered: {createdUser.Email}", // Use NewValues instead of Details
-                    IpAddress = request.IpAddress,
-                    UserAgent = request.UserAgent,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                // Note: AuditLog creation would need a repository - simplified for now
+                // 7. Enregistrer dans l'audit centralisé NiesPro
+                await _auditService.AuditCreateAsync(
+                    userId: createdUser.Id.ToString(),
+                    userName: createdUser.Username,
+                    entityName: "User",
+                    entityId: createdUser.Id.ToString(),
+                    metadata: new Dictionary<string, object>
+                    {
+                        { "Email", createdUser.Email },
+                        { "Username", createdUser.Username },
+                        { "FirstName", createdUser.FirstName ?? string.Empty },
+                        { "LastName", createdUser.LastName ?? string.Empty },
+                        { "IpAddress", request.IpAddress ?? string.Empty },
+                        { "UserAgent", request.UserAgent ?? string.Empty },
+                        { "DeviceId", device.Id.ToString() }
+                    });
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
                 _logger.LogInformation("User registration successful for: {UserId}", createdUser.Id);
+                
+                // Log centralizedNiesPro 
+                await _logsService.LogAsync(
+                    LogLevel.Information, 
+                    $"User registration successful for UserId: {createdUser.Id}",
+                    properties: new Dictionary<string, object>
+                    {
+                        { "UserId", createdUser.Id },
+                        { "Email", createdUser.Email },
+                        { "Username", createdUser.Username },
+                        { "RegistrationTime", createdUser.CreatedAt },
+                        { "IpAddress", request.IpAddress ?? string.Empty },
+                        { "UserAgent", request.UserAgent ?? string.Empty }
+                    });
 
                 // 8. Create response
                 var response = new RegisterUserResponse
@@ -148,6 +168,17 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             {
                 _logger.LogError(ex, "Error during user registration for email: {Email}", request.Email);
                 
+                // Log d'erreur centralisé NiesPro
+                await _logsService.LogErrorAsync(ex, 
+                    $"Error during user registration for email: {request.Email}",
+                    properties: new Dictionary<string, object>
+                    {
+                        { "Email", request.Email },
+                        { "Username", request.Username },
+                        { "IpAddress", request.IpAddress ?? string.Empty },
+                        { "UserAgent", request.UserAgent ?? string.Empty }
+                    });
+                
                 try
                 {
                     await _unitOfWork.RollbackTransactionAsync(cancellationToken);
@@ -155,6 +186,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                 catch (Exception rollbackEx)
                 {
                     _logger.LogError(rollbackEx, "Error during transaction rollback");
+                    await _logsService.LogErrorAsync(rollbackEx, "Error during transaction rollback");
                 }
 
                 return ApiResponse<RegisterUserResponse>.CreateError("Registration failed. Please try again.");

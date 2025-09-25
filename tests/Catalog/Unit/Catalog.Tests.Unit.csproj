@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\..\src\Services\Catalog\Catalog.Application\Catalog.Application.csproj" />
     <ProjectReference Include="..\..\..\src\Services\Catalog\Catalog.Domain\Catalog.Domain.csproj" />
     <ProjectReference Include="..\..\..\src\Services\Catalog\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Shared\NiesPro.Logging.Client\NiesPro.Logging.Client.csproj" />
   </ItemGroup>
 
 </Project>

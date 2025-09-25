@@ -53,7 +53,7 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Auth.API.Program>
             services.AddLogging(builder =>
             {
                 builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Information);
+                builder.SetMinimumLevel(LogLevel.Debug);
             });
 
             // Ensure database is created and seeded
@@ -126,7 +126,7 @@ public class AuthWebApplicationFactory : WebApplicationFactory<Auth.API.Program>
             Id = Guid.NewGuid(),
             Username = "testuser",
             Email = "test@example.com",
-            PasswordHash = "$2a$11$8oJ5Y7WzGJTq8DZBhp.b6OxbCqE4y6pLgDrJ1HEhH8QxNzU3zXzZa", // "password123"
+            PasswordHash = "$2a$11$NQPeyAc.E2oeEKRJwj3uOu0RhYAgZU.kNLJWnG3FVaqq2Xb9sht2a", // "password123"
             FirstName = "Test",
             LastName = "User", 
             IsActive = true,

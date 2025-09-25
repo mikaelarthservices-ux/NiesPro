@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using Auth.Application.Features.Authentication.Commands.Login;
 using Auth.Application.Features.Users.Commands.RegisterUser;
+using Auth.API.Models.Requests;
 using NiesPro.Contracts.Common;
 
 namespace Auth.Tests.Integration.Controllers;
@@ -58,7 +59,7 @@ public class AuthControllerTests
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/login", content);
+        var response = await _client.PostAsync("/api/v1/auth/login", content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -92,10 +93,10 @@ public class AuthControllerTests
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/login", content);
+        var response = await _client.PostAsync("/api/v1/auth/login", content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var apiResponse = JsonConvert.DeserializeObject<ApiResponse<LoginResponse>>(responseContent);
@@ -122,10 +123,10 @@ public class AuthControllerTests
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/login", content);
+        var response = await _client.PostAsync("/api/v1/auth/login", content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var apiResponse = JsonConvert.DeserializeObject<ApiResponse<LoginResponse>>(responseContent);
@@ -139,27 +140,27 @@ public class AuthControllerTests
     public async Task Register_WithValidData_ShouldCreateUser()
     {
         // Arrange
-        var registerRequest = new RegisterUserCommand
+        var registerRequest = new
         {
             Username = "newuser",
             Email = "newuser@example.com", 
             Password = "NewPassword123!",
+            ConfirmPassword = "NewPassword123!",
             FirstName = "New",
             LastName = "User",
+            PhoneNumber = "+1234567890",
             DeviceKey = "new-device-key",
-            DeviceName = "New Device",
-            IpAddress = "127.0.0.1",
-            UserAgent = "Test Agent"
+            DeviceName = "New Device"
         };
 
         var json = JsonConvert.SerializeObject(registerRequest);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/register", content);
+        var response = await _client.PostAsync("/api/v1/auth/register", content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var apiResponse = JsonConvert.DeserializeObject<ApiResponse<RegisterUserResponse>>(responseContent);
@@ -167,8 +168,8 @@ public class AuthControllerTests
         apiResponse.Should().NotBeNull();
         apiResponse!.IsSuccess.Should().BeTrue();
         apiResponse.Data.Should().NotBeNull();
-        apiResponse.Data!.Email.Should().Be(registerRequest.Email);
-        apiResponse.Data.Username.Should().Be(registerRequest.Username);
+        apiResponse.Data!.Email.Should().Be("newuser@example.com");
+        apiResponse.Data.Username.Should().Be("newuser");
         apiResponse.Data.UserId.Should().NotBeEmpty();
     }
 
@@ -193,7 +194,7 @@ public class AuthControllerTests
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/register", content);
+        var response = await _client.PostAsync("/api/v1/auth/register", content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -227,7 +228,7 @@ public class AuthControllerTests
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/register", content);
+        var response = await _client.PostAsync("/api/v1/auth/register", content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Catalog.Application\Catalog.Application.csproj" />
     <ProjectReference Include="..\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\NiesPro.Contracts\NiesPro.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Logging.Client\NiesPro.Logging.Client.csproj" />
   </ItemGroup>
 
 </Project>

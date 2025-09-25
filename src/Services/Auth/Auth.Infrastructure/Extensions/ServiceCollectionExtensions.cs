@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeviceRepository, DeviceRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
         // Security Services - Use Auth-specific adapters
         services.AddScoped<IPasswordService, PasswordServiceAdapter>();
