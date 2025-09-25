@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyTitle>NiesPro Logging Client</AssemblyTitle>
+    <AssemblyDescription>Client obligatoire pour intégration avec service Logs/Audit centralisé NiesPro</AssemblyDescription>
+    <PackageId>NiesPro.Logging.Client</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>NiesPro Team</Authors>
+    <Company>NiesPro</Company>
+    <Product>NiesPro ERP</Product>
+    <Copyright>© 2024 NiesPro. Tous droits réservés.</Copyright>
+    <PackageDescription>
+      Client de logging centralisé OBLIGATOIRE pour tous les microservices NiesPro.
+      Fournit logging applicatif, audit trail, métriques performance et alertes système.
+    </PackageDescription>
+    <PackageTags>niespro;logging;audit;metrics;alerts;microservices</PackageTags>
+    <RepositoryUrl>https://github.com/niespro/niespro-erp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.6" />
+    <PackageReference Include="System.Text.Json" Version="8.0.3" />
+  </ItemGroup>
+
+</Project>

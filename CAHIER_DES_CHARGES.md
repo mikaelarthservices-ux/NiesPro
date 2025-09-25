@@ -1,23 +1,27 @@
-# Cahier des charges - NiesPro ERP
+# 📋 CAHIER DES CHARGES UNIFIÉ - NIESPRO ERP
 
-## 1. Contexte et objectifs
+*Version consolidée et actualisée - 25 Septembre 2025*
 
-### 1.1 Contexte du projet
-Le projet NiesPro ERP vise à développer une solution complète de gestion pour les entreprises opérant dans les secteurs de la boutique et de la restauration. Cette solution doit permettre une gestion unifiée et efficace de tous les aspects opérationnels.
+---
 
-### 1.2 Objectifs généraux
-- Créer un système ERP modulaire et évolutif
-- Assurer une sécurité maximale des données et transactions  
-- Offrir une expérience utilisateur moderne et intuitive
-- Permettre le fonctionnement multi-terminal et multi-site
-- Garantir la traçabilité complète des opérations
+## 🎯 **VISION ET OBJECTIFS**
 
-### 1.3 Objectifs spécifiques
-- Réduire les erreurs de gestion de 90%
-- Améliorer la productivité de 40%
-- Centraliser les données pour une vision globale
-- Automatiser les processus répétitifs
-- Faciliter la prise de décision par des rapports temps réel
+### **📈 Contexte Stratégique**
+NiesPro ERP est une solution enterprise de gestion intégrée destinée aux PME du secteur retail (boutiques) et food service (restaurants). Le projet vise à digitaliser complètement les opérations commerciales avec une architecture microservices moderne garantissant scalabilité, sécurité et performance.
+
+### **🎯 Objectifs Business**
+- **Efficacité Opérationnelle** : Réduction de 90% des erreurs de gestion
+- **Productivité** : Amélioration de 40% de la productivité des équipes  
+- **Visibilité** : Centralisation des données pour vision 360° temps réel
+- **Automatisation** : Élimination des tâches répétitives et sources d'erreurs
+- **Évolutivité** : Architecture évolutive supportant la croissance business
+
+### **🚀 Objectifs Techniques**
+- **Architecture Microservices** native cloud avec .NET 8
+- **Sécurité Enterprise** avec authentification multi-niveaux
+- **Performance** : Temps de réponse < 200ms sur opérations critiques
+- **Disponibilité** : SLA 99.9% avec réplication et failover
+- **Observabilité** : Monitoring, logging et alerting complets
 
 ## 2. Périmètre fonctionnel
 

@@ -1,13 +1,45 @@
-# NiesPro ERP - Système de gestion Boutique & Restaurant
+# 🎯 NIESPRO ERP - Solution Complète Boutique & Restaurant
 
-[![.NET Version](https://img.shields.io/badge/.NET-6.0+-blue)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0+-blue)](https://dotnet.microsoft.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange)](https://mysql.com/)
+[![Microservices](https://img.shields.io/badge/Architecture-Microservices-green)](SERVICES-MATRIX.md)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
-[![Build Status](https://img.shields.io/badge/Build-Passing-green)](BUILD)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](SERVICES-MATRIX.md)
 
-## 🎯 Description
+## 📋 **DOCUMENTATION CENTRALE**
 
-NiesPro ERP est une solution complète de gestion pour boutiques et restaurants, développée en C# avec une architecture microservices moderne. Le système offre une sécurité renforcée avec double authentification (utilisateur + terminal) et une interface utilisateur cohérente basée sur Material Design.
+> **📚 [VOIR LA DOCUMENTATION COMPLÈTE](./DOCUMENTATION-CENTRALE.md)**
+
+| Document Principal | Description |
+|-------------------|-------------|
+| **[🎯 DOCUMENTATION CENTRALE](./DOCUMENTATION-CENTRALE.md)** | Index complet et navigation |
+| **[📊 MATRICE DES SERVICES](./SERVICES-MATRIX.md)** | Services, dépendances et statuts |
+| **[🔧 ARCHITECTURE MICROSERVICES](./ARCHITECTURE-MICROSERVICES.md)** | Architecture technique détaillée |
+| **[📋 CAHIER DES CHARGES UNIFIÉ](./CAHIER-CHARGES-UNIFIE.md)** | Spécifications complètes |
+| **[⚙️ CONFIGURATION FINALE](./CONFIGURATION-FINALE.md)** | Ports, environnements et déploiement |
+
+## 🚀 **DÉMARRAGE RAPIDE**
+
+### **1. Prérequis**
+- .NET 8 SDK
+- MySQL 8.0+
+- Git
+
+### **2. Installation**
+```bash
+git clone https://github.com/mikaelarthservices-ux/NiesPro.git
+cd NiesPro
+.\scripts\setup-databases.ps1
+.\start-all-services.ps1
+```
+
+### **3. Vérification**
+- Gateway: https://localhost:5010/swagger
+- Services Health: https://localhost:5010/health
+
+## 🎯 **DESCRIPTION EXÉCUTIVE**
+
+NiesPro ERP est une **solution enterprise** de gestion intégrée pour boutiques et restaurants, construite sur une **architecture microservices moderne** avec .NET 8. Le système garantit une sécurité maximale, une scalabilité élevée et une expérience utilisateur optimale.
 
 ## ✨ Fonctionnalités principales
 
