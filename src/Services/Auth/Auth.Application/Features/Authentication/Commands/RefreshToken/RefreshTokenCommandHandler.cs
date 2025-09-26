@@ -5,52 +5,70 @@ using Auth.Domain.Interfaces;
 using Auth.Application.Contracts.Services;
 using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
+using NiesPro.Contracts.Application.CQRS;
+using NiesPro.Logging.Client;
 
 namespace Auth.Application.Features.Authentication.Commands.RefreshToken
 {
     /// <summary>
-    /// Refresh token command handler for token renewal
+    /// Refresh token command handler - NiesPro Enterprise Standard with BaseCommandHandler
     /// </summary>
-    public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, ApiResponse<RefreshTokenResponse>>
+    public class RefreshTokenCommandHandler : BaseCommandHandler<RefreshTokenCommand, ApiResponse<RefreshTokenResponse>>
     {
         private readonly IUserSessionRepository _userSessionRepository;
         private readonly IUserRepository _userRepository;
         private readonly IJwtService _jwtService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<RefreshTokenCommandHandler> _logger;
+        private readonly ILogsServiceClient _logsService;
+        private readonly IAuditServiceClient _auditService;
 
         public RefreshTokenCommandHandler(
             IUserSessionRepository userSessionRepository,
             IUserRepository userRepository,
             IJwtService jwtService,
             IUnitOfWork unitOfWork,
-            ILogger<RefreshTokenCommandHandler> logger)
+            ILogger<RefreshTokenCommandHandler> logger,
+            ILogsServiceClient logsService,
+            IAuditServiceClient auditService)
+            : base(logger) // NiesPro Enterprise: BaseCommandHandler inheritance
         {
             _userSessionRepository = userSessionRepository;
             _userRepository = userRepository;
             _jwtService = jwtService;
             _unitOfWork = unitOfWork;
-            _logger = logger;
+            _logsService = logsService;
+            _auditService = auditService;
         }
 
+        /// <summary>
+        /// MediatR Handle method - delegates to BaseCommandHandler
+        /// </summary>
         public async Task<ApiResponse<RefreshTokenResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        {
+            return await HandleAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// NiesPro Enterprise: Execute business logic with automatic logging
+        /// </summary>
+        protected override async Task<ApiResponse<RefreshTokenResponse>> ExecuteAsync(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                _logger.LogInformation("Processing token refresh request");
+                Logger.LogInformation("Processing token refresh request");
 
                 // 1. Find session by refresh token
                 var userSession = await _userSessionRepository.GetByRefreshTokenAsync(request.RefreshToken, cancellationToken);
                 if (userSession == null)
                 {
-                    _logger.LogWarning("Invalid refresh token provided");
+                    Logger.LogWarning("Invalid refresh token provided");
                     return ApiResponse<RefreshTokenResponse>.CreateError("Invalid refresh token");
                 }
 
                 // 2. Check if session is active and not expired
                 if (!userSession.IsActive || userSession.ExpiresAt <= DateTime.UtcNow)
                 {
-                    _logger.LogWarning("Refresh token expired or inactive for session: {SessionId}", userSession.Id);
+                    Logger.LogWarning("Refresh token expired or inactive for session: {SessionId}", userSession.Id);
                     
                     // Deactivate expired session
                     userSession.IsActive = false;
@@ -64,12 +82,12 @@ namespace Auth.Application.Features.Authentication.Commands.RefreshToken
                 var user = await _userRepository.GetByIdAsync(userSession.UserId, cancellationToken);
                 if (user == null || !user.IsActive)
                 {
-                    _logger.LogWarning("User not found or inactive for session: {SessionId}", userSession.Id);
+                    Logger.LogWarning("User not found or inactive for session: {SessionId}", userSession.Id);
                     return ApiResponse<RefreshTokenResponse>.CreateError("User not found or inactive");
                 }
 
                 // 4. Generate new tokens
-                var userRoles = user.UserRoles?.Select(ur => ur.Role.Name).ToList() ?? new List<string>();
+                var userRoles = user.UserRoles?.Select(ur => ur.Role?.Name).Where(name => !string.IsNullOrEmpty(name)).Cast<string>().ToList() ?? new List<string>();
                 var newAccessToken = _jwtService.GenerateToken(user.Id, user.Email, userRoles);
                 var newRefreshToken = _jwtService.GenerateRefreshToken();
                 var newExpiresAt = _jwtService.GetTokenExpiration(newAccessToken);
@@ -85,7 +103,21 @@ namespace Auth.Application.Features.Authentication.Commands.RefreshToken
                 await _userSessionRepository.UpdateAsync(userSession, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Token refresh successful for user: {UserId}", user.Id);
+                Logger.LogInformation("Token refresh successful for user: {UserId}", user.Id);
+
+                // NiesPro Enterprise: Audit token refresh
+                await _auditService.AuditUpdateAsync(
+                    userId: user.Id.ToString(),
+                    userName: user.Username,
+                    entityName: "UserSession",
+                    entityId: userSession.Id.ToString(),
+                    metadata: new Dictionary<string, object>
+                    {
+                        { "RefreshTime", DateTime.UtcNow },
+                        { "IpAddress", request.IpAddress ?? string.Empty },
+                        { "UserAgent", request.UserAgent ?? string.Empty },
+                        { "SessionId", userSession.Id.ToString() }
+                    });
 
                 // 6. Create response
                 var response = new RefreshTokenResponse
@@ -101,7 +133,18 @@ namespace Auth.Application.Features.Authentication.Commands.RefreshToken
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during token refresh");
+                Logger.LogError(ex, "Error during token refresh");
+                
+                // NiesPro Enterprise: Log error centrally
+                await _logsService.LogErrorAsync(ex, 
+                    "Error during token refresh",
+                    properties: new Dictionary<string, object>
+                    {
+                        { "RefreshToken", request.RefreshToken.Substring(0, Math.Min(10, request.RefreshToken.Length)) + "..." },
+                        { "IpAddress", request.IpAddress ?? string.Empty },
+                        { "UserAgent", request.UserAgent ?? string.Empty }
+                    });
+                
                 return ApiResponse<RefreshTokenResponse>.CreateError("Token refresh failed");
             }
         }

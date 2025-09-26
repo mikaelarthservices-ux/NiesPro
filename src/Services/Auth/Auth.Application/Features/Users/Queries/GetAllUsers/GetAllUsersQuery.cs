@@ -1,12 +1,13 @@
 using MediatR;
 using NiesPro.Contracts.Common;
+using NiesPro.Contracts.Application.CQRS;
 
 namespace Auth.Application.Features.Users.Queries.GetAllUsers
 {
     /// <summary>
-    /// Get all users query with pagination and filtering
+    /// Get all users query with pagination and filtering - NiesPro Enterprise Standard
     /// </summary>
-    public class GetAllUsersQuery : IRequest<ApiResponse<GetAllUsersResponse>>
+    public class GetAllUsersQuery : BaseQuery<ApiResponse<GetAllUsersResponse>>
     {
         /// <summary>
         /// Page number for pagination (1-based)

@@ -1,13 +1,14 @@
 using MediatR;
 using NiesPro.Contracts.Common;
 using Auth.Application.Common.Models;
+using NiesPro.Contracts.Application.CQRS;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser
 {
     /// <summary>
-    /// Register user command request
+    /// Register user command request - NiesPro Enterprise Standard
     /// </summary>
-    public class RegisterUserCommand : IRequest<ApiResponse<RegisterUserResponse>>
+    public class RegisterUserCommand : BaseCommand<ApiResponse<RegisterUserResponse>>
     {
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

@@ -5,36 +5,51 @@ using Auth.Domain.Interfaces;
 using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 using Auth.Domain.Entities;
+using NiesPro.Contracts.Application.CQRS;
+using NiesPro.Logging.Client;
 
 namespace Auth.Application.Features.Users.Queries.GetAllUsers
 {
     /// <summary>
-    /// Get all users query handler with advanced filtering and pagination
+    /// Get all users query handler - NiesPro Enterprise Standard with BaseQueryHandler
     /// </summary>
-    public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, ApiResponse<GetAllUsersResponse>>
+    public class GetAllUsersQueryHandler : BaseQueryHandler<GetAllUsersQuery, ApiResponse<GetAllUsersResponse>>
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IDeviceRepository _deviceRepository;
-        private readonly ILogger<GetAllUsersQueryHandler> _logger;
+        private readonly ILogsServiceClient _logsService;
 
         public GetAllUsersQueryHandler(
             IUserRepository userRepository,
             IRoleRepository roleRepository,
             IDeviceRepository deviceRepository,
-            ILogger<GetAllUsersQueryHandler> logger)
+            ILogger<GetAllUsersQueryHandler> logger,
+            ILogsServiceClient logsService)
+            : base(logger) // NiesPro Enterprise: BaseQueryHandler inheritance
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _deviceRepository = deviceRepository;
-            _logger = logger;
+            _logsService = logsService;
         }
 
+        /// <summary>
+        /// MediatR Handle method - delegates to BaseQueryHandler
+        /// </summary>
         public async Task<ApiResponse<GetAllUsersResponse>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
+        {
+            return await HandleAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// NiesPro Enterprise: Execute business logic with automatic logging
+        /// </summary>
+        protected override async Task<ApiResponse<GetAllUsersResponse>> ExecuteAsync(GetAllUsersQuery request, CancellationToken cancellationToken)
         {
             try
             {
-                _logger.LogInformation("Retrieving users list. Page: {Page}, Size: {Size}, Search: {Search}", 
+                Logger.LogInformation("Retrieving users list. Page: {Page}, Size: {Size}, Search: {Search}", 
                     request.PageNumber, request.PageSize, request.SearchTerm ?? "None");
 
                 // 1. Build query parameters
@@ -119,15 +134,39 @@ namespace Auth.Application.Features.Users.Queries.GetAllUsers
                     }
                 };
 
-                _logger.LogInformation("Successfully retrieved {UserCount} users out of {TotalCount} total", 
+                Logger.LogInformation("Successfully retrieved {UserCount} users out of {TotalCount} total", 
                     userDtos.Count, totalCount);
+
+                // NiesPro Enterprise: Log query execution
+                await _logsService.LogAsync(
+                    Microsoft.Extensions.Logging.LogLevel.Information,
+                    $"GetAllUsers query executed successfully - {userDtos.Count} users returned",
+                    properties: new Dictionary<string, object>
+                    {
+                        { "PageNumber", request.PageNumber },
+                        { "PageSize", request.PageSize },
+                        { "SearchTerm", request.SearchTerm ?? string.Empty },
+                        { "TotalCount", totalCount },
+                        { "ReturnedCount", userDtos.Count }
+                    });
 
                 return ApiResponse<GetAllUsersResponse>.CreateSuccess(response, 
                     $"Retrieved {userDtos.Count} users successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving users list");
+                Logger.LogError(ex, "Error retrieving users list");
+                
+                // NiesPro Enterprise: Log error centrally
+                await _logsService.LogErrorAsync(ex, 
+                    "Error retrieving users list",
+                    properties: new Dictionary<string, object>
+                    {
+                        { "PageNumber", request.PageNumber },
+                        { "PageSize", request.PageSize },
+                        { "SearchTerm", request.SearchTerm ?? string.Empty }
+                    });
+                
                 return ApiResponse<GetAllUsersResponse>.CreateError("Failed to retrieve users list");
             }
         }
@@ -135,19 +174,19 @@ namespace Auth.Application.Features.Users.Queries.GetAllUsers
         /// <summary>
         /// Get user's last login timestamp from sessions
         /// </summary>
-        private async Task<DateTime?> GetLastLoginAsync(Guid userId, CancellationToken cancellationToken)
+        private Task<DateTime?> GetLastLoginAsync(Guid userId, CancellationToken cancellationToken)
         {
             try
             {
                 // Would implement with UserSession repository
                 // var lastSession = await _userSessionRepository.GetLastSessionByUserIdAsync(userId, cancellationToken);
                 // return lastSession?.CreatedAt;
-                return null;
+                return Task.FromResult<DateTime?>(null);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error getting last login for user: {UserId}", userId);
-                return null;
+                Logger.LogWarning(ex, "Error getting last login for user: {UserId}", userId);
+                return Task.FromResult<DateTime?>(null);
             }
         }
     }

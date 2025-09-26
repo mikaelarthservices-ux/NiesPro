@@ -2,13 +2,14 @@ using MediatR;
 using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 using System.ComponentModel.DataAnnotations;
+using NiesPro.Contracts.Application.CQRS;
 
 namespace Auth.Application.Features.Authentication.Commands.RefreshToken
 {
     /// <summary>
-    /// Command for refreshing JWT access token using refresh token
+    /// Command for refreshing JWT access token using refresh token - NiesPro Enterprise Standard
     /// </summary>
-    public class RefreshTokenCommand : IRequest<ApiResponse<RefreshTokenResponse>>
+    public class RefreshTokenCommand : BaseCommand<ApiResponse<RefreshTokenResponse>>
     {
         /// <summary>
         /// Refresh token for generating new access token

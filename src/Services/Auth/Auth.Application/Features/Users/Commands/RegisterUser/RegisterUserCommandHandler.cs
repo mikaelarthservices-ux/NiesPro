@@ -7,20 +7,20 @@ using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 using Auth.Domain.Entities;
 using NiesPro.Logging.Client;
+using NiesPro.Contracts.Application.CQRS;
 
 namespace Auth.Application.Features.Users.Commands.RegisterUser
 {
     /// <summary>
-    /// Register user command handler with complete business logic
+    /// Register user command handler - NiesPro Enterprise Standard with BaseCommandHandler
     /// </summary>
-    public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, ApiResponse<RegisterUserResponse>>
+    public class RegisterUserCommandHandler : BaseCommandHandler<RegisterUserCommand, ApiResponse<RegisterUserResponse>>
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IDeviceRepository _deviceRepository;
         private readonly IPasswordService _passwordService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<RegisterUserCommandHandler> _logger;
         private readonly ILogsServiceClient _logsService;
         private readonly IAuditServiceClient _auditService;
 
@@ -33,28 +33,39 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             ILogger<RegisterUserCommandHandler> logger,
             ILogsServiceClient logsService,
             IAuditServiceClient auditService)
+            : base(logger) // NiesPro Enterprise: BaseCommandHandler inheritance
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _deviceRepository = deviceRepository;
             _passwordService = passwordService;
             _unitOfWork = unitOfWork;
-            _logger = logger;
             _logsService = logsService;
             _auditService = auditService;
         }
 
+        /// <summary>
+        /// MediatR Handle method - delegates to BaseCommandHandler
+        /// </summary>
         public async Task<ApiResponse<RegisterUserResponse>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+        {
+            return await HandleAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// NiesPro Enterprise: Execute business logic with automatic logging
+        /// </summary>
+        protected override async Task<ApiResponse<RegisterUserResponse>> ExecuteAsync(RegisterUserCommand request, CancellationToken cancellationToken)
         {
             try
             {
-                _logger.LogInformation("Processing user registration for email: {Email}", request.Email);
+                Logger.LogInformation("Processing user registration for email: {Email}", request.Email);
 
                 // 1. Validate email uniqueness
                 var existingEmail = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
                 if (existingEmail != null)
                 {
-                    _logger.LogWarning("Registration attempt with existing email: {Email}", request.Email);
+                    Logger.LogWarning("Registration attempt with existing email: {Email}", request.Email);
                     return ApiResponse<RegisterUserResponse>.CreateError("Email is already registered");
                 }
 
@@ -62,7 +73,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                 var existingUsername = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
                 if (existingUsername != null)
                 {
-                    _logger.LogWarning("Registration attempt with existing username: {Username}", request.Username);
+                    Logger.LogWarning("Registration attempt with existing username: {Username}", request.Username);
                     return ApiResponse<RegisterUserResponse>.CreateError("Username is already taken");
                 }
 
@@ -137,7 +148,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                _logger.LogInformation("User registration successful for: {UserId}", createdUser.Id);
+                Logger.LogInformation("User registration successful for: {UserId}", createdUser.Id);
                 
                 // Log centralizedNiesPro 
                 await _logsService.LogAsync(
@@ -166,7 +177,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user registration for email: {Email}", request.Email);
+                Logger.LogError(ex, "Error during user registration for email: {Email}", request.Email);
                 
                 // Log d'erreur centralisé NiesPro
                 await _logsService.LogErrorAsync(ex, 
@@ -185,7 +196,7 @@ namespace Auth.Application.Features.Users.Commands.RegisterUser
                 }
                 catch (Exception rollbackEx)
                 {
-                    _logger.LogError(rollbackEx, "Error during transaction rollback");
+                    Logger.LogError(rollbackEx, "Error during transaction rollback");
                     await _logsService.LogErrorAsync(rollbackEx, "Error during transaction rollback");
                 }
 
