@@ -5,6 +5,8 @@ using Order.Application.Extensions;
 using Order.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using NiesPro.Logging.Client;
+using NiesPro.Logging.Client.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,9 @@ try
     // Configuration des couches
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddApplication();
+
+    // Configuration NiesPro Logging
+    builder.Services.AddNiesProLogging(builder.Configuration);
 
     // Configuration Swagger
     builder.Services.AddSwaggerConfiguration();
@@ -54,6 +59,9 @@ try
     // Middleware personnalisés
     app.UseRequestLogging();
     app.UseSerilogRequestLogging();
+    
+    // Middleware NiesPro Logging
+    app.UseNiesProLogging();
 
     // Configuration Swagger
     app.UseSwaggerConfiguration(app.Environment);

@@ -4,6 +4,7 @@ using Order.Domain.Repositories;
 using Order.Domain.ValueObjects;
 using Order.Domain.Entities;
 using FluentValidation;
+using NiesPro.Logging.Client;
 
 namespace Order.Application.Commands;
 
@@ -11,17 +12,31 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IValidator<CreateOrderCommand> _validator;
+    private readonly IAuditServiceClient _auditService;
 
     public CreateOrderCommandHandler(
         IOrderRepository orderRepository,
-        IValidator<CreateOrderCommand> validator)
+        IValidator<CreateOrderCommand> validator,
+        IAuditServiceClient auditService)
     {
         _orderRepository = orderRepository;
         _validator = validator;
+        _auditService = auditService;
     }
 
     public async Task<Guid> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
+        // Log audit - Début de création commande
+        await _auditService.AuditCreateAsync(
+            request.OrderData.CustomerId.ToString(),
+            "System",
+            "Order",
+            Guid.NewGuid().ToString(),
+            new Dictionary<string, object> { 
+                ["CustomerId"] = request.OrderData.CustomerId, 
+                ["ItemCount"] = request.OrderData.Items.Count 
+            });
+
         // Validation
         await _validator.ValidateAndThrowAsync(request, cancellationToken);
 
@@ -92,6 +107,20 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
         // Save order
         await _orderRepository.AddAsync(order, cancellationToken);
 
+        // Log audit - Commande créée avec succès
+        await _auditService.AuditCreateAsync(
+            request.OrderData.CustomerId.ToString(),
+            "System",
+            "Order",
+            order.Id.ToString(),
+            new Dictionary<string, object> { 
+                ["OrderNumber"] = orderNumber, 
+                ["CustomerId"] = request.OrderData.CustomerId,
+                ["TotalAmount"] = order.TotalAmount.Amount,
+                ["Currency"] = order.TotalAmount.Currency,
+                ["ItemCount"] = order.Items.Count
+            });
+
         return order.Id;
     }
 }
@@ -99,20 +128,43 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
 public sealed class ConfirmOrderCommandHandler : IRequestHandler<ConfirmOrderCommand, bool>
 {
     private readonly IOrderRepository _orderRepository;
+    private readonly IAuditServiceClient _auditService;
 
-    public ConfirmOrderCommandHandler(IOrderRepository orderRepository)
+    public ConfirmOrderCommandHandler(IOrderRepository orderRepository, IAuditServiceClient auditService)
     {
         _orderRepository = orderRepository;
+        _auditService = auditService;
     }
 
     public async Task<bool> Handle(ConfirmOrderCommand request, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.GetByIdAsync(request.OrderId, cancellationToken);
         if (order == null)
+        {
+            await _auditService.AuditAsync(
+                "System",
+                "System",
+                "ORDER_CONFIRMATION_FAILED",
+                "Order",
+                request.OrderId.ToString(),
+                new Dictionary<string, object> { ["OrderId"] = request.OrderId });
             return false;
+        }
 
         order.Confirm();
         await _orderRepository.UpdateAsync(order, cancellationToken);
+
+        // Log audit - Commande confirmée
+        await _auditService.AuditUpdateAsync(
+            "System",
+            "System",
+            "Order",
+            order.Id.ToString(),
+            new Dictionary<string, object> { 
+                ["OrderNumber"] = order.OrderNumber,
+                ["TotalAmount"] = order.TotalAmount.Amount,
+                ["ConfirmedAt"] = order.ConfirmedAt ?? DateTime.UtcNow
+            });
 
         return true;
     }
