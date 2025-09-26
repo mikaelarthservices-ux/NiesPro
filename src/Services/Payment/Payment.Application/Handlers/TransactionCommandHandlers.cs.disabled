@@ -1,0 +1,67 @@
+using MediatR;
+using Microsoft.Extensions.Logging;
+using Payment.Application.Commands;
+using Payment.Application.DTOs;
+using Payment.Domain.Interfaces;
+using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
+using Payment.Application.Common;
+
+namespace Payment.Application.Handlers;
+
+/// <summary>
+/// Handlers temporaires pour les commandes de transactions - À refactoriser en Enterprise
+/// </summary>
+public class CaptureTransactionCommandHandler : BaseCommandHandler<CaptureTransactionCommand, ApiResponse<TransactionResponse>>, 
+    IRequestHandler<CaptureTransactionCommand, ApiResponse<TransactionResponse>>
+{
+    public CaptureTransactionCommandHandler(
+        ILogsServiceClient logsService,
+        IAuditServiceClient auditService,
+        ILogger<CaptureTransactionCommandHandler> logger) 
+        : base(logsService, auditService, logger)
+    {
+    }
+
+    protected override async Task<ApiResponse<TransactionResponse>> ExecuteAsync(CaptureTransactionCommand request, CancellationToken cancellationToken)
+    {
+        // TODO: Implémenter la logique Enterprise de capture de transaction
+        return ApiResponse<TransactionResponse>.CreateError("Transaction capture not implemented yet - Enterprise refactoring needed");
+    }
+}
+
+public class RefundTransactionCommandHandler : BaseCommandHandler<RefundTransactionCommand, ApiResponse<RefundResponse>>, 
+    IRequestHandler<RefundTransactionCommand, ApiResponse<RefundResponse>>
+{
+    public RefundTransactionCommandHandler(
+        ILogsServiceClient logsService,
+        IAuditServiceClient auditService,
+        ILogger<RefundTransactionCommandHandler> logger) 
+        : base(logsService, auditService, logger)
+    {
+    }
+
+    protected override async Task<ApiResponse<RefundResponse>> ExecuteAsync(RefundTransactionCommand request, CancellationToken cancellationToken)
+    {
+        // TODO: Implémenter la logique Enterprise de remboursement
+        return ApiResponse<RefundResponse>.CreateError("Transaction refund not implemented yet - Enterprise refactoring needed");
+    }
+}
+
+public class CancelPaymentCommandHandler : BaseCommandHandler<CancelPaymentCommand, ApiResponse<PaymentResponse>>, 
+    IRequestHandler<CancelPaymentCommand, ApiResponse<PaymentResponse>>
+{
+    public CancelPaymentCommandHandler(
+        ILogsServiceClient logsService,
+        IAuditServiceClient auditService,
+        ILogger<CancelPaymentCommandHandler> logger) 
+        : base(logsService, auditService, logger)
+    {
+    }
+
+    protected override async Task<ApiResponse<PaymentResponse>> ExecuteAsync(CancelPaymentCommand request, CancellationToken cancellationToken)
+    {
+        // TODO: Implémenter la logique Enterprise d'annulation de paiement
+        return ApiResponse<PaymentResponse>.CreateError("Payment cancel not implemented yet - Enterprise refactoring needed");
+    }
+}

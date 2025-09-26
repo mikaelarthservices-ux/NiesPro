@@ -1,13 +1,21 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
+using Payment.Application.DTOs;
+using Payment.Application.Services;
+using Payment.Domain.Entities;
+using Payment.Domain.Interfaces;
 using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
+using NiesPro.Contracts.Application.CQRS;
+using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
 
-namespace Payment.Application.Commands;
+namespace Payment.Application.Commands.V2;
 
 /// <summary>
-/// Commande pour créer un nouveau paiement
+/// Commande pour créer un nouveau paiement - NiesPro Enterprise Standard
 /// </summary>
-public class CreatePaymentCommand : IRequest<CreatePaymentResult>
+public class CreatePaymentCommand : BaseCommand<ApiResponse<PaymentResponse>>
 {
     /// <summary>
     /// Montant du paiement
@@ -15,7 +23,7 @@ public class CreatePaymentCommand : IRequest<CreatePaymentResult>
     public decimal Amount { get; set; }
 
     /// <summary>
-    /// Devise du paiement
+    /// Devise du paiement (défaut: EUR)
     /// </summary>
     public string Currency { get; set; } = "EUR";
 
@@ -40,160 +48,60 @@ public class CreatePaymentCommand : IRequest<CreatePaymentResult>
     public string? Description { get; set; }
 
     /// <summary>
-    /// Délai d'expiration en minutes (défaut: 60)
+    /// Méthode de paiement
     /// </summary>
-    public int TimeoutMinutes { get; set; } = 60;
+    public PaymentMethodType PaymentMethod { get; set; } = PaymentMethodType.CreditCard;
 
     /// <summary>
-    /// Nombre maximum de tentatives (défaut: 3)
+    /// Informations de la carte de crédit (si applicable)
     /// </summary>
-    public int MaxAttempts { get; set; } = 3;
+    public CreditCardInfo? CreditCardInfo { get; set; }
 
     /// <summary>
-    /// Autoriser les paiements partiels
+    /// URL de retour après paiement
     /// </summary>
-    public bool AllowPartialPayments { get; set; } = false;
+    public string? ReturnUrl { get; set; }
 
     /// <summary>
-    /// Montant minimum pour un paiement partiel
+    /// URL de retour après annulation
     /// </summary>
-    public decimal? MinimumPartialAmount { get; set; }
+    public string? CancelUrl { get; set; }
 
     /// <summary>
-    /// Adresse IP du client
+    /// URL de notification webhook
     /// </summary>
-    public string? IpAddress { get; set; }
-
-    /// <summary>
-    /// User-Agent du navigateur
-    /// </summary>
-    public string? UserAgent { get; set; }
-
-    /// <summary>
-    /// Identifiant de session
-    /// </summary>
-    public string? SessionId { get; set; }
-
-    /// <summary>
-    /// Devise du montant minimum partiel
-    /// </summary>
-    public string? MinimumPartialCurrency { get; set; }
-
-    /// <summary>
-    /// URL de retour en cas de succès
-    /// </summary>
-    public string? SuccessUrl { get; set; }
-
-    /// <summary>
-    /// URL de retour en cas d'échec
-    /// </summary>
-    public string? FailureUrl { get; set; }
-
-    /// <summary>
-    /// URL de webhook pour les notifications
-    /// </summary>
-    public string? WebhookUrl { get; set; }
+    public string? NotificationUrl { get; set; }
 
     /// <summary>
     /// Métadonnées additionnelles
     /// </summary>
-    public Dictionary<string, string>? Metadata { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
 }
 
 /// <summary>
-/// Résultat de la création d'un paiement
+/// Commande pour traiter un paiement existant - NiesPro Enterprise Standard
 /// </summary>
-public class CreatePaymentResult
+public class ProcessPaymentCommand : BaseCommand<ApiResponse<TransactionResponse>>
 {
     /// <summary>
-    /// Identifiant du paiement créé
+    /// Identifiant du paiement à traiter
     /// </summary>
     public Guid PaymentId { get; set; }
 
     /// <summary>
-    /// Identifiant (alias pour compatibilité)
+    /// Token de sécurité du paiement
     /// </summary>
-    public Guid Id 
-    { 
-        get => PaymentId; 
-        set => PaymentId = value; 
-    }
+    public string? PaymentToken { get; set; }
 
     /// <summary>
-    /// Numéro de paiement
+    /// Authentification 3D Secure
     /// </summary>
-    public string PaymentNumber { get; set; } = string.Empty;
+    public ThreeDSecureData? ThreeDSecureData { get; set; }
 
     /// <summary>
-    /// Statut du paiement
+    /// Métadonnées de la transaction
     /// </summary>
-    public PaymentStatus Status { get; set; }
-
-    /// <summary>
-    /// Date d'expiration
-    /// </summary>
-    public DateTime ExpiresAt { get; set; }
-
-    /// <summary>
-    /// URL de paiement (si applicable)
-    /// </summary>
-    public string? PaymentUrl { get; set; }
-
-    /// <summary>
-    /// Montant du paiement
-    /// </summary>
-    public decimal Amount { get; set; }
-
-    /// <summary>
-    /// Devise
-    /// </summary>
-    public string Currency { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Indication de succès
-    /// </summary>
-    public bool IsSuccess { get; set; }
-
-    /// <summary>
-    /// Message d'erreur en cas d'échec
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-}
-
-/// <summary>
-/// Commande pour traiter un paiement avec un moyen de paiement spécifique
-/// </summary>
-public class ProcessPaymentCommand : IRequest<ProcessPaymentResult>
-{
-    /// <summary>
-    /// Identifiant du paiement
-    /// </summary>
-    public Guid PaymentId { get; set; }
-
-    /// <summary>
-    /// Identifiant du moyen de paiement
-    /// </summary>
-    public Guid PaymentMethodId { get; set; }
-
-    /// <summary>
-    /// Montant à traiter (pour paiements partiels)
-    /// </summary>
-    public decimal? Amount { get; set; }
-
-    /// <summary>
-    /// Devise du montant
-    /// </summary>
-    public string? Currency { get; set; }
-
-    /// <summary>
-    /// Code de vérification (CVV pour cartes)
-    /// </summary>
-    public string? VerificationCode { get; set; }
-
-    /// <summary>
-    /// Données 3D Secure
-    /// </summary>
-    public ThreeDSecureData? ThreeDSecure { get; set; }
+    public Dictionary<string, object>? TransactionMetadata { get; set; }
 
     /// <summary>
     /// Adresse IP du client
@@ -203,97 +111,162 @@ public class ProcessPaymentCommand : IRequest<ProcessPaymentResult>
     /// <summary>
     /// User Agent du client
     /// </summary>
-    public string? ClientUserAgent { get; set; }
-
-    /// <summary>
-    /// Données de géolocalisation
-    /// </summary>
-    public string? GeoLocation { get; set; }
-
-    /// <summary>
-    /// Force le traitement même en cas de score de fraude élevé
-    /// </summary>
-    public bool ForceProcess { get; set; } = false;
-
-    /// <summary>
-    /// Adresse IP du client (alias pour compatibilité)
-    /// </summary>
-    public string? IpAddress 
-    { 
-        get => ClientIpAddress; 
-        set => ClientIpAddress = value; 
-    }
-
-    /// <summary>
-    /// User Agent du client (alias pour compatibilité)
-    /// </summary>
-    public string? UserAgent 
-    { 
-        get => ClientUserAgent; 
-        set => ClientUserAgent = value; 
-    }
+    public string? UserAgent { get; set; }
 }
 
 /// <summary>
-/// Données 3D Secure pour l'authentification
+/// Commande pour rembourser une transaction - NiesPro Enterprise Standard
 /// </summary>
-public class ThreeDSecureData
+public class RefundTransactionCommand : BaseCommand<ApiResponse<RefundResponse>>
 {
     /// <summary>
-    /// Indique si 3D Secure est activé
-    /// </summary>
-    public bool Enabled { get; set; }
-
-    /// <summary>
-    /// Version de 3D Secure (1.0, 2.0, 2.1, 2.2)
-    /// </summary>
-    public string Version { get; set; } = "2.0";
-
-    /// <summary>
-    /// Résultat de l'authentification
-    /// </summary>
-    public string? AuthenticationResult { get; set; }
-
-    /// <summary>
-    /// ECI (Electronic Commerce Indicator)
-    /// </summary>
-    public string? Eci { get; set; }
-
-    /// <summary>
-    /// CAVV (Cardholder Authentication Verification Value)
-    /// </summary>
-    public string? Cavv { get; set; }
-
-    /// <summary>
-    /// XID (Transaction Identifier)
-    /// </summary>
-    public string? Xid { get; set; }
-}
-
-/// <summary>
-/// Résultat du traitement d'un paiement
-/// </summary>
-public class ProcessPaymentResult
-{
-    /// <summary>
-    /// Identifiant de la transaction
+    /// Identifiant de la transaction à rembourser
     /// </summary>
     public Guid TransactionId { get; set; }
 
     /// <summary>
-    /// Numéro de transaction
+    /// Montant à rembourser (optionnel, remboursement total si non spécifié)
     /// </summary>
-    public string TransactionNumber { get; set; } = string.Empty;
+    public decimal? RefundAmount { get; set; }
 
     /// <summary>
-    /// Statut de la transaction
+    /// Raison du remboursement
+    /// </summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Notes administratives
+    /// </summary>
+    public string? AdminNotes { get; set; }
+}
+
+/// <summary>
+/// Commande pour capturer une autorisation - NiesPro Enterprise Standard
+/// </summary>
+public class CaptureTransactionCommand : BaseCommand<ApiResponse<TransactionResponse>>
+{
+    /// <summary>
+    /// Identifiant de la transaction d'autorisation
+    /// </summary>
+    public Guid AuthorizationTransactionId { get; set; }
+
+    /// <summary>
+    /// Montant à capturer (optionnel, capture totale si non spécifié)
+    /// </summary>
+    public decimal? CaptureAmount { get; set; }
+
+    /// <summary>
+    /// Métadonnées de capture
+    /// </summary>
+    public Dictionary<string, object>? CaptureMetadata { get; set; }
+}
+
+/// <summary>
+/// Informations de carte de crédit pour le paiement
+/// </summary>
+public class CreditCardInfo
+{
+    /// <summary>
+    /// Numéro de carte (masqué ou token)
+    /// </summary>
+    public string CardNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Mois d'expiration
+    /// </summary>
+    public int ExpiryMonth { get; set; }
+
+    /// <summary>
+    /// Année d'expiration
+    /// </summary>
+    public int ExpiryYear { get; set; }
+
+    /// <summary>
+    /// Code de vérification (CVV)
+    /// </summary>
+    public string? Cvv { get; set; }
+
+    /// <summary>
+    /// Nom du porteur
+    /// </summary>
+    public string? HolderName { get; set; }
+}
+
+/// <summary>
+/// Données d'authentification 3D Secure
+/// </summary>
+public class ThreeDSecureData
+{
+    /// <summary>
+    /// Token 3D Secure
+    /// </summary>
+    public string Token { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Statut de l'authentification
+    /// </summary>
+    public string AuthenticationStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Transaction ID 3DS
+    /// </summary>
+    public string? TransactionId { get; set; }
+}
+
+/// <summary>
+/// Réponse pour les opérations de paiement
+/// </summary>
+public class PaymentResponse
+{
+    /// <summary>
+    /// Identifiant du paiement
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Numéro de paiement
+    /// </summary>
+    public string PaymentNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ID de la commande associée
+    /// </summary>
+    public Guid OrderId { get; set; }
+
+    /// <summary>
+    /// ID du client
+    /// </summary>
+    public Guid CustomerId { get; set; }
+
+    /// <summary>
+    /// ID du marchand
+    /// </summary>
+    public Guid MerchantId { get; set; }
+
+    /// <summary>
+    /// Montant du paiement
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// Devise
+    /// </summary>
+    public string Currency { get; set; } = "EUR";
+
+    /// <summary>
+    /// Statut du paiement
     /// </summary>
     public PaymentStatus Status { get; set; }
 
     /// <summary>
-    /// Code d'autorisation (si applicable)
+    /// Méthode de paiement
     /// </summary>
-    public string? AuthorizationCode { get; set; }
+    public PaymentMethodType PaymentMethod { get; set; }
+
+    /// <summary>
+    /// Description
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     /// Référence externe
@@ -301,267 +274,145 @@ public class ProcessPaymentResult
     public string? ExternalReference { get; set; }
 
     /// <summary>
-    /// Montant traité
+    /// URL de retour
+    /// </summary>
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// URL de notification
+    /// </summary>
+    public string? NotificationUrl { get; set; }
+
+    /// <summary>
+    /// Date de création
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Date de mise à jour
+    /// </summary>
+    public DateTime? UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// Réponse pour les opérations de transaction
+/// </summary>
+public class TransactionResponse
+{
+    /// <summary>
+    /// Identifiant de la transaction
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// ID du paiement associé
+    /// </summary>
+    public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Type de transaction
+    /// </summary>
+    public TransactionType Type { get; set; }
+
+    /// <summary>
+    /// Statut de la transaction
+    /// </summary>
+    public TransactionStatus Status { get; set; }
+
+    /// <summary>
+    /// Montant de la transaction
     /// </summary>
     public decimal Amount { get; set; }
 
     /// <summary>
     /// Devise
     /// </summary>
-    public string Currency { get; set; } = string.Empty;
+    public string Currency { get; set; } = "EUR";
 
     /// <summary>
-    /// Frais de traitement
+    /// Référence externe (processeur de paiement)
     /// </summary>
-    public decimal? Fees { get; set; }
-
-    /// <summary>
-    /// Raison du refus (en cas d'échec)
-    /// </summary>
-    public PaymentDeclineReason? DeclineReason { get; set; }
-
-    /// <summary>
-    /// Message d'erreur
-    /// </summary>
-    public string? ErrorMessage { get; set; }
-
-    /// <summary>
-    /// Score de fraude
-    /// </summary>
-    public int? FraudScore { get; set; }
-
-    /// <summary>
-    /// Indication de succès
-    /// </summary>
-    public bool IsSuccess { get; set; }
-
-    /// <summary>
-    /// Indique si une authentification 3D Secure est requise
-    /// </summary>
-    public bool Requires3DSecure { get; set; }
-
-    /// <summary>
-    /// URL pour l'authentification 3D Secure
-    /// </summary>
-    public string? ThreeDSecureUrl { get; set; }
-
-    /// <summary>
-    /// Données additionnelles pour 3D Secure
-    /// </summary>
-    public Dictionary<string, string>? ThreeDSecureData { get; set; }
-}
-
-/// <summary>
-/// Commande pour capturer une transaction autorisée
-/// </summary>
-public class CaptureTransactionCommand : IRequest<CaptureTransactionResult>
-{
-    /// <summary>
-    /// Identifiant de la transaction
-    /// </summary>
-    public Guid TransactionId { get; set; }
-
-    /// <summary>
-    /// Montant à capturer (pour capture partielle)
-    /// </summary>
-    public decimal? Amount { get; set; }
-
-    /// <summary>
-    /// Devise du montant
-    /// </summary>
-    public string? Currency { get; set; }
-
-    /// <summary>
-    /// Raison de la capture
-    /// </summary>
-    public string? Reason { get; set; }
-}
-
-/// <summary>
-/// Résultat de la capture d'une transaction
-/// </summary>
-public class CaptureTransactionResult
-{
-    /// <summary>
-    /// Identifiant de la transaction
-    /// </summary>
-    public Guid TransactionId { get; set; }
-
-    /// <summary>
-    /// Numéro de transaction
-    /// </summary>
-    public string TransactionNumber { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Statut après capture
-    /// </summary>
-    public PaymentStatus Status { get; set; }
-
-    /// <summary>
-    /// Montant capturé
-    /// </summary>
-    public decimal CapturedAmount { get; set; }
-
-    /// <summary>
-    /// Devise
-    /// </summary>
-    public string Currency { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Frais appliqués
-    /// </summary>
-    public decimal? Fees { get; set; }
+    public string? ExternalReference { get; set; }
 
     /// <summary>
     /// Date de traitement
     /// </summary>
-    public DateTime ProcessedAt { get; set; }
+    public DateTime? ProcessedAt { get; set; }
 
     /// <summary>
-    /// Indication de succès
+    /// Date de création
     /// </summary>
-    public bool IsSuccess { get; set; }
-
-    /// <summary>
-    /// Message d'erreur
-    /// </summary>
-    public string? ErrorMessage { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>
-/// Commande pour rembourser une transaction
+/// Réponse pour les opérations de remboursement
 /// </summary>
-public class RefundTransactionCommand : IRequest<RefundTransactionResult>
+public class RefundResponse
 {
     /// <summary>
-    /// Identifiant de la transaction originale
+    /// Identifiant du remboursement
     /// </summary>
-    public Guid TransactionId { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
-    /// Montant à rembourser
+    /// ID du paiement associé
+    /// </summary>
+    public Guid PaymentId { get; set; }
+
+    /// <summary>
+    /// Montant remboursé
     /// </summary>
     public decimal Amount { get; set; }
 
     /// <summary>
-    /// Devise du remboursement
+    /// Devise
     /// </summary>
     public string Currency { get; set; } = "EUR";
 
     /// <summary>
     /// Raison du remboursement
     /// </summary>
-    public string? Reason { get; set; }
-
-    /// <summary>
-    /// Identifiant de l'utilisateur qui initie le remboursement
-    /// </summary>
-    public Guid? InitiatedBy { get; set; }
-
-    /// <summary>
-    /// Identifiant utilisateur (alias pour compatibilité)
-    /// </summary>
-    public Guid? UserId 
-    { 
-        get => InitiatedBy; 
-        set => InitiatedBy = value; 
-    }
-}
-
-/// <summary>
-/// Résultat du remboursement
-/// </summary>
-public class RefundTransactionResult
-{
-    /// <summary>
-    /// Identifiant de la transaction de remboursement
-    /// </summary>
-    public Guid RefundTransactionId { get; set; }
-
-    /// <summary>
-    /// Numéro de la transaction de remboursement
-    /// </summary>
-    public string RefundTransactionNumber { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Identifiant de la transaction originale
-    /// </summary>
-    public Guid OriginalTransactionId { get; set; }
-
-    /// <summary>
-    /// Montant remboursé
-    /// </summary>
-    public decimal RefundedAmount { get; set; }
-
-    /// <summary>
-    /// Devise
-    /// </summary>
-    public string Currency { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
 
     /// <summary>
     /// Statut du remboursement
     /// </summary>
-    public PaymentStatus Status { get; set; }
+    public RefundStatus Status { get; set; }
 
     /// <summary>
-    /// Date de traitement
+    /// ID de remboursement externe
     /// </summary>
-    public DateTime ProcessedAt { get; set; }
+    public string? ExternalRefundId { get; set; }
 
     /// <summary>
-    /// Indication de succès
+    /// Date du remboursement
     /// </summary>
-    public bool IsSuccess { get; set; }
-
-    /// <summary>
-    /// Message d'erreur
-    /// </summary>
-    public string? ErrorMessage { get; set; }
+    public DateTime RefundDate { get; set; }
 }
 
 /// <summary>
-/// Commande pour annuler un paiement
+/// Commande pour annuler un paiement - NiesPro Enterprise Standard
 /// </summary>
-public class CancelPaymentCommand : IRequest<CancelPaymentResult>
+public class CancelPaymentCommand : BaseCommand<ApiResponse<PaymentResponse>>
 {
     /// <summary>
-    /// Identifiant du paiement à annuler
+    /// ID du paiement à annuler
     /// </summary>
     public Guid PaymentId { get; set; }
 
     /// <summary>
     /// Raison de l'annulation
     /// </summary>
-    public string? CancellationReason { get; set; }
+    public string CancellationReason { get; set; } = string.Empty;
 
     /// <summary>
-    /// Identifiant de l'utilisateur qui annule
+    /// Notes administratives
     /// </summary>
-    public Guid? UserId { get; set; }
-}
-
-/// <summary>
-/// Résultat de l'annulation de paiement
-/// </summary>
-public class CancelPaymentResult
-{
-    /// <summary>
-    /// Indication de succès
-    /// </summary>
-    public bool IsSuccess { get; set; }
+    public string? AdminNotes { get; set; }
 
     /// <summary>
-    /// Message d'erreur
+    /// Métadonnées supplémentaires pour l'annulation
     /// </summary>
-    public string? ErrorMessage { get; set; }
-
-    /// <summary>
-    /// Identifiant du paiement annulé
-    /// </summary>
-    public Guid PaymentId { get; set; }
-
-    /// <summary>
-    /// Date d'annulation
-    /// </summary>
-    public DateTime CancelledAt { get; set; }
+    public Dictionary<string, object>? CancellationMetadata { get; set; }
 }

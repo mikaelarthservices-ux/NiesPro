@@ -26,6 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Payment.Application\Payment.Application.csproj" />
     <ProjectReference Include="..\Payment.Infrastructure\Payment.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Contracts\NiesPro.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NiesPro.Logging.Client\NiesPro.Logging.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

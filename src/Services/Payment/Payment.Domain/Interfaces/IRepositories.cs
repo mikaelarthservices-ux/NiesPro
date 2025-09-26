@@ -41,6 +41,27 @@ public interface IPaymentRepository : IBaseRepository<Payment.Domain.Entities.Pa
         CancellationToken cancellationToken = default);
     Task<List<Payment.Domain.Entities.Payment>> GetByMerchantIdAndDateRangeAsync(
         Guid merchantId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
+
+    // ✅ NiesPro Enterprise: Méthodes additionnelles pour les nouvelles fonctionnalités
+    Task<List<Payment.Domain.Entities.Payment>> GetByCustomerIdAsync(
+        Guid customerId, int page, int pageSize, PaymentStatus? status = null, 
+        DateTime? startDate = null, DateTime? endDate = null, CancellationToken cancellationToken = default);
+    
+    Task<int> GetCountByCustomerIdAsync(
+        Guid customerId, PaymentStatus? status = null, 
+        DateTime? startDate = null, DateTime? endDate = null, CancellationToken cancellationToken = default);
+
+    Task<List<PaymentRefund>> GetRefundsByPaymentIdAsync(Guid paymentId, CancellationToken cancellationToken = default);
+    Task AddRefundAsync(PaymentRefund refund, CancellationToken cancellationToken = default);
+
+    Task<int> GetCountAsync(
+        string? searchTerm = null,
+        Guid? customerId = null,
+        Guid? merchantId = null,
+        PaymentStatus? status = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

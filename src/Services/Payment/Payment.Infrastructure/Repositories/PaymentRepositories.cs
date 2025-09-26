@@ -258,6 +258,148 @@ public partial class PaymentRepository : BaseRepository<Domain.Entities.Payment>
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(cancellationToken);
     }
+
+    // ✅ NiesPro Enterprise: Méthodes additionnelles pour les nouvelles fonctionnalités
+    public async Task<List<Payment.Domain.Entities.Payment>> GetByCustomerIdAsync(
+        Guid customerId, int page, int pageSize, PaymentStatus? status = null, 
+        DateTime? startDate = null, DateTime? endDate = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments
+            .Include(p => p.Merchant)
+            .Include(p => p.Transactions)
+            .Include(p => p.Refunds)
+            .Where(p => p.CustomerId == customerId);
+
+        if (status.HasValue)
+            query = query.Where(p => p.Status == status.Value);
+
+        if (startDate.HasValue)
+            query = query.Where(p => p.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(p => p.CreatedAt <= endDate.Value);
+
+        return await query
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+    
+    public async Task<int> GetCountByCustomerIdAsync(
+        Guid customerId, PaymentStatus? status = null, 
+        DateTime? startDate = null, DateTime? endDate = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments
+            .Where(p => p.CustomerId == customerId);
+
+        if (status.HasValue)
+            query = query.Where(p => p.Status == status.Value);
+
+        if (startDate.HasValue)
+            query = query.Where(p => p.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(p => p.CreatedAt <= endDate.Value);
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+    public async Task<List<PaymentRefund>> GetRefundsByPaymentIdAsync(Guid paymentId, CancellationToken cancellationToken = default)
+    {
+        return await _context.PaymentRefunds
+            .Include(r => r.Payment)
+            .Where(r => r.PaymentId == paymentId)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddRefundAsync(PaymentRefund refund, CancellationToken cancellationToken = default)
+    {
+        await _context.PaymentRefunds.AddAsync(refund, cancellationToken);
+    }
+
+    public async Task<List<Payment.Domain.Entities.Payment>> SearchAsync(
+        string? searchTerm = null,
+        Guid? customerId = null,
+        Guid? merchantId = null,
+        PaymentStatus? status = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int pageNumber = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments
+            .Include(p => p.Merchant)
+            .Include(p => p.Transactions)
+            .Include(p => p.Refunds)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(p => p.PaymentNumber.Contains(searchTerm) || 
+                                   p.Reference.Contains(searchTerm) ||
+                                   (p.Description != null && p.Description.Contains(searchTerm)));
+        }
+
+        if (customerId.HasValue)
+            query = query.Where(p => p.CustomerId == customerId.Value);
+
+        if (merchantId.HasValue)
+            query = query.Where(p => p.MerchantId == merchantId.Value);
+
+        if (status.HasValue)
+            query = query.Where(p => p.Status == status.Value);
+
+        if (fromDate.HasValue)
+            query = query.Where(p => p.CreatedAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(p => p.CreatedAt <= toDate.Value);
+
+        return await query
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetCountAsync(
+        string? searchTerm = null,
+        Guid? customerId = null,
+        Guid? merchantId = null,
+        PaymentStatus? status = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Payments.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(p => p.PaymentNumber.Contains(searchTerm) || 
+                                   p.Reference.Contains(searchTerm) ||
+                                   (p.Description != null && p.Description.Contains(searchTerm)));
+        }
+
+        if (customerId.HasValue)
+            query = query.Where(p => p.CustomerId == customerId.Value);
+
+        if (merchantId.HasValue)
+            query = query.Where(p => p.MerchantId == merchantId.Value);
+
+        if (status.HasValue)
+            query = query.Where(p => p.Status == status.Value);
+
+        if (fromDate.HasValue)
+            query = query.Where(p => p.CreatedAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(p => p.CreatedAt <= toDate.Value);
+
+        return await query.CountAsync(cancellationToken);
+    }
 }
 
 /// <summary>

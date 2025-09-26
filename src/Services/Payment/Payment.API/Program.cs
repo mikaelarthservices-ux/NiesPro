@@ -13,10 +13,14 @@ using Serilog;
 using Serilog.Events;
 using Pomelo.EntityFrameworkCore.MySql;
 using Payment.API.Middleware;
+using NiesPro.Logging.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration de Serilog
+// ✅ NiesPro Enterprise: Configuration Logging Centralisé
+builder.Services.AddNiesProLogging(builder.Configuration);
+
+// Configuration de Serilog (garde en complément)
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -212,6 +216,9 @@ builder.Services.AddResponseCaching();
 var app = builder.Build();
 
 // Configuration du pipeline de requêtes
+
+// ✅ NiesPro Enterprise: Middleware Logging Centralisé
+app.UseNiesProLogging();
 
 // Gestion des erreurs globales
 app.UseMiddleware<ExceptionHandlingMiddleware>();

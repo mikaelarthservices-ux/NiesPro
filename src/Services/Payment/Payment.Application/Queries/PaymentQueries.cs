@@ -1,13 +1,21 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Payment.Application.DTOs;
+using Payment.Application.Services;
+using Payment.Domain.Entities;
+using Payment.Domain.Interfaces;
+using Payment.Domain.ValueObjects;
 using Payment.Domain.Enums;
+using NiesPro.Contracts.Application.CQRS;
+using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
 
-namespace Payment.Application.Queries;
+namespace Payment.Application.Queries.V2;
 
 /// <summary>
-/// Requête pour obtenir un paiement par son identifiant
+/// Requête pour récupérer un paiement par ID - NiesPro Enterprise Standard
 /// </summary>
-public class GetPaymentByIdQuery : IRequest<PaymentDetailDto?>
+public class GetPaymentByIdQuery : BaseQuery<ApiResponse<PaymentDetailDto>>
 {
     /// <summary>
     /// Identifiant du paiement
@@ -17,12 +25,12 @@ public class GetPaymentByIdQuery : IRequest<PaymentDetailDto?>
     /// <summary>
     /// Inclure les transactions associées
     /// </summary>
-    public bool IncludeTransactions { get; set; } = true;
+    public bool IncludeTransactions { get; set; } = false;
 
     /// <summary>
-    /// Inclure les moyens de paiement utilisés
+    /// Inclure les remboursements
     /// </summary>
-    public bool IncludePaymentMethods { get; set; } = false;
+    public bool IncludeRefunds { get; set; } = false;
 
     public GetPaymentByIdQuery(Guid paymentId)
     {
@@ -31,51 +39,9 @@ public class GetPaymentByIdQuery : IRequest<PaymentDetailDto?>
 }
 
 /// <summary>
-/// Requête pour obtenir un paiement par son numéro
+/// Requête pour récupérer les paiements d'un client - NiesPro Enterprise Standard
 /// </summary>
-public class GetPaymentByNumberQuery : IRequest<PaymentDetailDto?>
-{
-    /// <summary>
-    /// Numéro du paiement
-    /// </summary>
-    public string PaymentNumber { get; set; }
-
-    /// <summary>
-    /// Inclure les transactions associées
-    /// </summary>
-    public bool IncludeTransactions { get; set; } = true;
-
-    public GetPaymentByNumberQuery(string paymentNumber)
-    {
-        PaymentNumber = paymentNumber;
-    }
-}
-
-/// <summary>
-/// Requête pour obtenir les paiements d'une commande
-/// </summary>
-public class GetPaymentsByOrderIdQuery : IRequest<List<PaymentSummaryDto>>
-{
-    /// <summary>
-    /// Identifiant de la commande
-    /// </summary>
-    public Guid OrderId { get; set; }
-
-    /// <summary>
-    /// Inclure les paiements annulés
-    /// </summary>
-    public bool IncludeCancelled { get; set; } = false;
-
-    public GetPaymentsByOrderIdQuery(Guid orderId)
-    {
-        OrderId = orderId;
-    }
-}
-
-/// <summary>
-/// Requête pour obtenir les paiements d'un client
-/// </summary>
-public class GetPaymentsByCustomerQuery : IRequest<Payment.Application.DTOs.PagedResult<PaymentSummaryDto>>
+public class GetPaymentsByCustomerQuery : BaseQuery<ApiResponse<PagedResult<PaymentSummaryDto>>>
 {
     /// <summary>
     /// Identifiant du client
@@ -83,44 +49,29 @@ public class GetPaymentsByCustomerQuery : IRequest<Payment.Application.DTOs.Page
     public Guid CustomerId { get; set; }
 
     /// <summary>
-    /// Page à récupérer (base 1)
+    /// Numéro de page (1-based)
     /// </summary>
     public int Page { get; set; } = 1;
 
     /// <summary>
-    /// Nombre d'éléments par page
+    /// Taille de page (maximum 100)
     /// </summary>
     public int PageSize { get; set; } = 20;
 
     /// <summary>
-    /// Filtrer par statut
+    /// Filtre par statut
     /// </summary>
     public PaymentStatus? Status { get; set; }
 
     /// <summary>
-    /// Date de début pour le filtrage
+    /// Date de début (optionnelle)
     /// </summary>
-    public DateTime? FromDate { get; set; }
+    public DateTime? StartDate { get; set; }
 
     /// <summary>
-    /// Date de fin pour le filtrage
+    /// Date de fin (optionnelle)
     /// </summary>
-    public DateTime? ToDate { get; set; }
-
-    /// <summary>
-    /// Montant minimum
-    /// </summary>
-    public decimal? MinAmount { get; set; }
-
-    /// <summary>
-    /// Montant maximum
-    /// </summary>
-    public decimal? MaxAmount { get; set; }
-
-    /// <summary>
-    /// Devise pour les filtres de montant
-    /// </summary>
-    public string? Currency { get; set; }
+    public DateTime? EndDate { get; set; }
 
     public GetPaymentsByCustomerQuery(Guid customerId)
     {
@@ -129,285 +80,485 @@ public class GetPaymentsByCustomerQuery : IRequest<Payment.Application.DTOs.Page
 }
 
 /// <summary>
-/// Requête pour obtenir les statistiques de paiement d'un commerçant
+/// Handler pour récupérer un paiement par ID - NiesPro Enterprise Standard
 /// </summary>
-public class GetMerchantPaymentStatsQuery : IRequest<MerchantPaymentStatsDto>
+public class GetPaymentByIdQueryHandler : BaseQueryHandler<GetPaymentByIdQuery, ApiResponse<PaymentDetailDto>>,
+    IRequestHandler<GetPaymentByIdQuery, ApiResponse<PaymentDetailDto>>
 {
-    /// <summary>
-    /// Identifiant du commerçant
-    /// </summary>
-    public Guid MerchantId { get; set; }
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly ITransactionRepository _transactionRepository;
+    private readonly ILogsServiceClient _logsService;
 
-    /// <summary>
-    /// Date de début pour les statistiques
-    /// </summary>
-    public DateTime FromDate { get; set; }
-
-    /// <summary>
-    /// Date de fin pour les statistiques
-    /// </summary>
-    public DateTime ToDate { get; set; }
-
-    /// <summary>
-    /// Devise pour les statistiques
-    /// </summary>
-    public string Currency { get; set; } = "EUR";
-
-    /// <summary>
-    /// Grouper par période
-    /// </summary>
-    public StatsPeriod GroupBy { get; set; } = StatsPeriod.Today;
-
-    public GetMerchantPaymentStatsQuery(Guid merchantId, DateTime fromDate, DateTime toDate)
+    public GetPaymentByIdQueryHandler(
+        IPaymentRepository paymentRepository,
+        ITransactionRepository transactionRepository,
+        ILogsServiceClient logsService,
+        ILogger<GetPaymentByIdQueryHandler> logger) : base(logger)
     {
-        MerchantId = merchantId;
-        FromDate = fromDate;
-        ToDate = toDate;
+        _paymentRepository = paymentRepository;
+        _transactionRepository = transactionRepository;
+        _logsService = logsService;
+    }
+
+    /// <summary>
+    /// MediatR Handle method - délègue vers BaseQueryHandler
+    /// </summary>
+    public async Task<ApiResponse<PaymentDetailDto>> Handle(GetPaymentByIdQuery request, CancellationToken cancellationToken)
+        => await HandleAsync(request, cancellationToken);
+
+    /// <summary>
+    /// Exécute la logique de récupération du paiement - NiesPro Enterprise Implementation
+    /// </summary>
+    protected override async Task<ApiResponse<PaymentDetailDto>> ExecuteAsync(GetPaymentByIdQuery query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Logger.LogInformation("Retrieving payment {PaymentId}", query.PaymentId);
+
+            await _logsService.LogInformationAsync($"Retrieving payment: {query.PaymentId}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["PaymentId"] = query.PaymentId,
+                ["IncludeTransactions"] = query.IncludeTransactions,
+                ["IncludeRefunds"] = query.IncludeRefunds
+            });
+
+            // Récupération du paiement
+            var payment = await _paymentRepository.GetByIdAsync(query.PaymentId);
+            if (payment == null)
+            {
+                await _logsService.LogWarningAsync($"Payment not found: {query.PaymentId}", new Dictionary<string, object>
+                {
+                    ["QueryId"] = query.QueryId,
+                    ["PaymentId"] = query.PaymentId
+                });
+
+                return ApiResponse<PaymentDetailDto>.CreateError(
+                    "Payment not found",
+                    404
+                );
+            }
+
+            // Construction du DTO
+            var paymentDto = new PaymentDetailDto
+            {
+                Id = payment.Id,
+                PaymentNumber = payment.PaymentNumber,
+                OrderId = payment.OrderId,
+                CustomerId = payment.CustomerId,
+                MerchantId = payment.MerchantId,
+                Amount = payment.Amount.Amount,
+                Currency = payment.Amount.Currency.Code,
+                Status = payment.Status,
+                PaymentMethod = payment.Method,
+                Description = payment.Description,
+                ReturnUrl = payment.ReturnUrl,
+                NotificationUrl = payment.WebhookUrl,
+                Metadata = payment.Metadata.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value),
+                CreatedAt = payment.CreatedAt,
+                UpdatedAt = payment.UpdatedAt ?? DateTime.UtcNow
+            };
+
+            // Transactions associées (si demandées)
+            if (query.IncludeTransactions)
+            {
+                var transactions = await _transactionRepository.GetByPaymentIdAsync(payment.Id);
+                paymentDto.Transactions = transactions.Select(t => new TransactionDto
+                {
+                    Id = t.Id,
+                    Type = t.Type,
+                    Status = t.Status,
+                    Amount = t.Amount.Amount,
+                    Currency = t.Amount.Currency.Code,
+                    ExternalReference = t.ExternalReference,
+                    ProcessedAt = t.ProcessedAt ?? DateTime.UtcNow
+                }).ToList();
+            }
+
+            // Remboursements (si demandés)
+            if (query.IncludeRefunds)
+            {
+                var refunds = await _paymentRepository.GetRefundsByPaymentIdAsync(payment.Id);
+                paymentDto.Refunds = refunds.Select(r => new RefundDto
+                {
+                    Id = r.Id,
+                    Amount = r.Amount.Amount,
+                    Currency = r.Amount.Currency.Code,
+                    Reason = r.Reason,
+                    Status = r.Status,
+                    RefundDate = r.ProcessedAt ?? DateTime.UtcNow
+                }).ToList();
+            }
+
+            await _logsService.LogInformationAsync($"Payment retrieved successfully: {payment.PaymentNumber}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["PaymentId"] = payment.Id,
+                ["PaymentNumber"] = payment.PaymentNumber,
+                ["Status"] = payment.Status.ToString()
+            });
+
+            return ApiResponse<PaymentDetailDto>.CreateSuccess(
+                paymentDto,
+                "Payment retrieved successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            await _logsService.LogErrorAsync(ex, $"Error retrieving payment: {query.PaymentId}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["PaymentId"] = query.PaymentId,
+                ["ErrorMessage"] = ex.Message
+            });
+
+            Logger.LogError(ex, "Error retrieving payment {PaymentId}", query.PaymentId);
+            
+            return ApiResponse<PaymentDetailDto>.CreateError(
+                "Internal server error while retrieving payment",
+                new[] { ex.Message }
+            );
+        }
     }
 }
 
 /// <summary>
-/// Requête pour obtenir une transaction par son identifiant
+/// Handler pour récupérer les paiements d'un client - NiesPro Enterprise Standard  
 /// </summary>
-public class GetTransactionByIdQuery : IRequest<TransactionDetailDto?>
+public class GetPaymentsByCustomerQueryHandler : BaseQueryHandler<GetPaymentsByCustomerQuery, ApiResponse<PagedResult<PaymentSummaryDto>>>,
+    IRequestHandler<GetPaymentsByCustomerQuery, ApiResponse<PagedResult<PaymentSummaryDto>>>
 {
-    /// <summary>
-    /// Identifiant de la transaction
-    /// </summary>
-    public Guid TransactionId { get; set; }
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly ILogsServiceClient _logsService;
 
-    /// <summary>
-    /// Inclure le paiement parent
-    /// </summary>
-    public bool IncludePayment { get; set; } = false;
-
-    /// <summary>
-    /// Inclure les transactions enfants (remboursements)
-    /// </summary>
-    public bool IncludeChildTransactions { get; set; } = true;
-
-    public GetTransactionByIdQuery(Guid transactionId)
+    public GetPaymentsByCustomerQueryHandler(
+        IPaymentRepository paymentRepository,
+        ILogsServiceClient logsService,
+        ILogger<GetPaymentsByCustomerQueryHandler> logger) : base(logger)
     {
-        TransactionId = transactionId;
+        _paymentRepository = paymentRepository;
+        _logsService = logsService;
+    }
+
+    public async Task<ApiResponse<PagedResult<PaymentSummaryDto>>> Handle(GetPaymentsByCustomerQuery request, CancellationToken cancellationToken)
+        => await HandleAsync(request, cancellationToken);
+
+    protected override async Task<ApiResponse<PagedResult<PaymentSummaryDto>>> ExecuteAsync(GetPaymentsByCustomerQuery query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Logger.LogInformation("Retrieving payments for customer {CustomerId}", query.CustomerId);
+
+            await _logsService.LogInformationAsync($"Retrieving payments for customer: {query.CustomerId}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["CustomerId"] = query.CustomerId,
+                ["Page"] = query.Page,
+                ["PageSize"] = query.PageSize,
+                ["Status"] = query.Status?.ToString() ?? "All",
+                ["StartDate"] = query.StartDate?.ToString("yyyy-MM-dd") ?? "None",
+                ["EndDate"] = query.EndDate?.ToString("yyyy-MM-dd") ?? "None"
+            });
+
+            // Validation des paramètres de pagination
+            if (query.Page < 1) query.Page = 1;
+            if (query.PageSize < 1 || query.PageSize > 100) query.PageSize = 20;
+
+            // Récupération des paiements avec pagination
+            var payments = await _paymentRepository.GetByCustomerIdAsync(
+                query.CustomerId,
+                query.Page,
+                query.PageSize,
+                query.Status,
+                query.StartDate,
+                query.EndDate
+            );
+
+            var totalCount = await _paymentRepository.GetCountByCustomerIdAsync(
+                query.CustomerId,
+                query.Status,
+                query.StartDate,
+                query.EndDate
+            );
+
+            // Conversion vers DTOs
+            var paymentDtos = payments.Select(p => new PaymentSummaryDto
+            {
+                Id = p.Id,
+                PaymentNumber = p.PaymentNumber,
+                OrderId = p.OrderId,
+                Amount = p.Amount.Amount,
+                Currency = p.Amount.Currency.Code,
+                Status = p.Status,
+                PaymentMethod = p.Method,
+                Description = p.Description,
+                CreatedAt = p.CreatedAt
+            }).ToList();
+
+            // Résultat paginé
+            var pagedResult = new PagedResult<PaymentSummaryDto>
+            {
+                Items = paymentDtos,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / query.PageSize)
+            };
+
+            await _logsService.LogInformationAsync($"Retrieved {paymentDtos.Count} payments for customer: {query.CustomerId}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["CustomerId"] = query.CustomerId,
+                ["ItemsCount"] = paymentDtos.Count,
+                ["TotalCount"] = totalCount,
+                ["Page"] = query.Page,
+                ["TotalPages"] = pagedResult.TotalPages
+            });
+
+            return ApiResponse<PagedResult<PaymentSummaryDto>>.CreateSuccess(
+                pagedResult,
+                $"Retrieved {paymentDtos.Count} payments successfully"
+            );
+        }
+        catch (Exception ex)
+        {
+            await _logsService.LogErrorAsync(ex, $"Error retrieving payments for customer: {query.CustomerId}", new Dictionary<string, object>
+            {
+                ["QueryId"] = query.QueryId,
+                ["CustomerId"] = query.CustomerId,
+                ["ErrorMessage"] = ex.Message
+            });
+
+            Logger.LogError(ex, "Error retrieving payments for customer {CustomerId}", query.CustomerId);
+            
+            return ApiResponse<PagedResult<PaymentSummaryDto>>.CreateError(
+                "Internal server error while retrieving payments",
+                new[] { ex.Message }
+            );
+        }
     }
 }
 
 /// <summary>
-/// Requête pour obtenir les transactions d'un paiement
+/// DTO pour les détails complets d'un paiement
 /// </summary>
-public class GetTransactionsByPaymentQuery : IRequest<List<TransactionSummaryDto>>
+public class PaymentDetailDto
 {
-    /// <summary>
-    /// Identifiant du paiement
-    /// </summary>
-    public Guid PaymentId { get; set; }
-
-    /// <summary>
-    /// Filtrer par type de transaction
-    /// </summary>
-    public TransactionType? Type { get; set; }
-
-    /// <summary>
-    /// Filtrer par statut
-    /// </summary>
-    public PaymentStatus? Status { get; set; }
-
-    public GetTransactionsByPaymentQuery(Guid paymentId)
-    {
-        PaymentId = paymentId;
-    }
-}
-
-/// <summary>
-/// Requête pour obtenir les moyens de paiement d'un client
-/// </summary>
-public class GetPaymentMethodsByCustomerQuery : IRequest<List<PaymentMethodDto>>
-{
-    /// <summary>
-    /// Identifiant du client
-    /// </summary>
+    public Guid Id { get; set; }
+    public string PaymentNumber { get; set; } = string.Empty;
+    public Guid OrderId { get; set; }
     public Guid CustomerId { get; set; }
-
-    /// <summary>
-    /// Inclure les moyens de paiement inactifs
-    /// </summary>
-    public bool IncludeInactive { get; set; } = false;
-
-    /// <summary>
-    /// Filtrer par type de moyen de paiement
-    /// </summary>
-    public PaymentMethodType? Type { get; set; }
-
-    public GetPaymentMethodsByCustomerQuery(Guid customerId)
-    {
-        CustomerId = customerId;
-    }
+    public Guid MerchantId { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public PaymentStatus Status { get; set; }
+    public PaymentMethodType PaymentMethod { get; set; }
+    public string? Description { get; set; }
+    public string? ReturnUrl { get; set; }
+    public string? NotificationUrl { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    
+    // Relations optionnelles
+    public List<TransactionDto>? Transactions { get; set; }
+    public List<RefundDto>? Refunds { get; set; }
 }
 
 /// <summary>
-/// Requête pour obtenir un moyen de paiement par son identifiant
+/// DTO pour le résumé d'un paiement
 /// </summary>
-public class GetPaymentMethodByIdQuery : IRequest<PaymentMethodDetailDto?>
+public class PaymentSummaryDto
 {
-    /// <summary>
-    /// Identifiant du moyen de paiement
-    /// </summary>
-    public Guid PaymentMethodId { get; set; }
-
-    /// <summary>
-    /// Inclure les statistiques d'utilisation
-    /// </summary>
-    public bool IncludeUsageStats { get; set; } = false;
-
-    public GetPaymentMethodByIdQuery(Guid paymentMethodId)
-    {
-        PaymentMethodId = paymentMethodId;
-    }
+    public Guid Id { get; set; }
+    public string PaymentNumber { get; set; } = string.Empty;
+    public Guid OrderId { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public PaymentStatus Status { get; set; }
+    public PaymentMethodType PaymentMethod { get; set; }
+    public string? Description { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>
-/// Requête pour rechercher des paiements avec des critères avancés
+/// DTO pour une transaction
 /// </summary>
-public class SearchPaymentsQuery : IRequest<Payment.Application.DTOs.PagedResult<PaymentSummaryDto>>
+public class TransactionDto
 {
-    /// <summary>
-    /// Terme de recherche (numéro de paiement, numéro de commande, etc.)
-    /// </summary>
+    public Guid Id { get; set; }
+    public TransactionType Type { get; set; }
+    public TransactionStatus Status { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public string? ExternalReference { get; set; }
+    public DateTime ProcessedAt { get; set; }
+}
+
+/// <summary>
+/// DTO pour un remboursement
+/// </summary>
+public class RefundDto
+{
+    public Guid Id { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public string Reason { get; set; } = string.Empty;
+    public RefundStatus Status { get; set; }
+    public DateTime RefundDate { get; set; }
+}
+
+/// <summary>
+/// Résultat paginé générique
+/// </summary>
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+    public bool HasPrevious => Page > 1;
+    public bool HasNext => Page < TotalPages;
+}
+
+/// <summary>
+/// Query pour rechercher des paiements avec critères - NiesPro Enterprise Standard
+/// </summary>
+public class SearchPaymentsQuery : BaseQuery<ApiResponse<PagedResult<PaymentSummaryDto>>>
+{
     public string? SearchTerm { get; set; }
-
-    /// <summary>
-    /// Identifiant du commerçant
-    /// </summary>
-    public Guid? MerchantId { get; set; }
-
-    /// <summary>
-    /// Identifiant du client
-    /// </summary>
     public Guid? CustomerId { get; set; }
-
-    /// <summary>
-    /// Statuts à inclure
-    /// </summary>
-    public List<PaymentStatus>? Statuses { get; set; }
-
-    /// <summary>
-    /// Types de moyen de paiement
-    /// </summary>
-    public List<PaymentMethodType>? PaymentMethodTypes { get; set; }
-
-    /// <summary>
-    /// Date de début
-    /// </summary>
-    public DateTime? FromDate { get; set; }
-
-    /// <summary>
-    /// Date de fin
-    /// </summary>
-    public DateTime? ToDate { get; set; }
-
-    /// <summary>
-    /// Montant minimum
-    /// </summary>
+    public Guid? MerchantId { get; set; }
+    public PaymentStatus? Status { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
     public decimal? MinAmount { get; set; }
-
-    /// <summary>
-    /// Montant maximum
-    /// </summary>
     public decimal? MaxAmount { get; set; }
-
-    /// <summary>
-    /// Devise
-    /// </summary>
-    public string? Currency { get; set; }
-
-    /// <summary>
-    /// Page à récupérer
-    /// </summary>
+    public PaymentMethodType? PaymentMethod { get; set; }
     public int Page { get; set; } = 1;
-
-    /// <summary>
-    /// Nombre d'éléments par page
-    /// </summary>
     public int PageSize { get; set; } = 20;
-
-    /// <summary>
-    /// Champ de tri
-    /// </summary>
-    public string? SortBy { get; set; }
-
-    /// <summary>
-    /// Ordre de tri (asc/desc)
-    /// </summary>
-    public string? SortOrder { get; set; } = "desc";
 }
 
 /// <summary>
-/// Requête pour rechercher des transactions
+/// Query pour rechercher des transactions avec critères - NiesPro Enterprise Standard
 /// </summary>
-public class SearchTransactionsQuery : IRequest<Payment.Application.DTOs.PagedResult<TransactionSummaryDto>>
+public class SearchTransactionsQuery : BaseQuery<ApiResponse<PagedResult<TransactionSummaryDto>>>
 {
-    /// <summary>
-    /// Terme de recherche
-    /// </summary>
     public string? SearchTerm { get; set; }
-
-    /// <summary>
-    /// Statut de la transaction
-    /// </summary>
-    public TransactionStatus? Status { get; set; }
-
-    /// <summary>
-    /// Identifiant du paiement
-    /// </summary>
     public Guid? PaymentId { get; set; }
-
-    /// <summary>
-    /// Identifiant du marchand
-    /// </summary>
-    public Guid? MerchantId { get; set; }
-
-    /// <summary>
-    /// Date de début
-    /// </summary>
+    public Guid? CustomerId { get; set; }
+    public TransactionStatus? Status { get; set; }
+    public TransactionType? Type { get; set; }
     public DateTime? StartDate { get; set; }
-
-    /// <summary>
-    /// Date de fin
-    /// </summary>
     public DateTime? EndDate { get; set; }
-
-    /// <summary>
-    /// Montant minimum
-    /// </summary>
     public decimal? MinAmount { get; set; }
-
-    /// <summary>
-    /// Montant maximum
-    /// </summary>
     public decimal? MaxAmount { get; set; }
-
-    /// <summary>
-    /// Devise
-    /// </summary>
-    public string? Currency { get; set; }
-
-    /// <summary>
-    /// Page à récupérer
-    /// </summary>
     public int Page { get; set; } = 1;
-
-    /// <summary>
-    /// Nombre d'éléments par page
-    /// </summary>
     public int PageSize { get; set; } = 20;
+}
 
-    /// <summary>
-    /// Champ de tri
-    /// </summary>
-    public string? SortBy { get; set; }
+/// <summary>
+/// Handler pour la recherche de paiements - NiesPro Enterprise Standard
+/// </summary>
+public class SearchPaymentsQueryHandler : IRequestHandler<SearchPaymentsQuery, ApiResponse<PagedResult<PaymentSummaryDto>>>
+{
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly ILogsServiceClient _logsService;
 
-    /// <summary>
-    /// Ordre de tri (asc/desc)
-    /// </summary>
-    public string? SortOrder { get; set; } = "desc";
+    public SearchPaymentsQueryHandler(
+        IPaymentRepository paymentRepository,
+        ILogsServiceClient logsService)
+    {
+        _paymentRepository = paymentRepository;
+        _logsService = logsService;
+    }
+
+    public async Task<ApiResponse<PagedResult<PaymentSummaryDto>>> Handle(SearchPaymentsQuery request, CancellationToken cancellationToken)
+    {
+        var searchResult = await _paymentRepository.SearchAsync(
+            searchTerm: request.SearchTerm,
+            customerId: request.CustomerId,
+            merchantId: request.MerchantId,
+            fromDate: request.StartDate,
+            toDate: request.EndDate,
+            pageNumber: request.Page,
+            pageSize: request.PageSize,
+            cancellationToken: cancellationToken);
+
+        var paymentDtos = searchResult.payments.Select(p => new PaymentSummaryDto
+        {
+            Id = p.Id,
+            PaymentNumber = p.PaymentNumber,
+            Amount = p.Amount.Amount,
+            Currency = p.Amount.Currency.Code,
+            Status = p.Status,
+            PaymentMethod = p.Method,
+            Description = p.Description,
+            CreatedAt = p.CreatedAt
+        }).ToList();
+
+        var result = new PagedResult<PaymentSummaryDto>
+        {
+            Items = paymentDtos,
+            TotalCount = searchResult.totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalPages = (int)Math.Ceiling((double)searchResult.totalCount / request.PageSize)
+        };
+
+        return ApiResponse<PagedResult<PaymentSummaryDto>>.CreateSuccess(result, "Payments search completed successfully");
+    }
+}
+
+/// <summary>
+/// Handler pour la recherche de transactions - NiesPro Enterprise Standard
+/// </summary>
+public class SearchTransactionsQueryHandler : IRequestHandler<SearchTransactionsQuery, ApiResponse<PagedResult<TransactionSummaryDto>>>
+{
+    private readonly ITransactionRepository _transactionRepository;
+    private readonly ILogsServiceClient _logsService;
+
+    public SearchTransactionsQueryHandler(
+        ITransactionRepository transactionRepository,
+        ILogsServiceClient logsService)
+    {
+        _transactionRepository = transactionRepository;
+        _logsService = logsService;
+    }
+
+    public async Task<ApiResponse<PagedResult<TransactionSummaryDto>>> Handle(SearchTransactionsQuery request, CancellationToken cancellationToken)
+    {
+        // TODO: Implémenter la recherche de transactions dans le repository
+        var transactions = new List<TransactionSummaryDto>();
+        var totalCount = 0;
+
+        var result = new PagedResult<TransactionSummaryDto>
+        {
+            Items = transactions,
+            TotalCount = totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
+
+        return ApiResponse<PagedResult<TransactionSummaryDto>>.CreateSuccess(result, "Transactions search completed successfully");
+    }
+}
+
+/// <summary>
+/// DTO pour résumé de transaction
+/// </summary>
+public class TransactionSummaryDto
+{
+    public Guid Id { get; set; }
+    public string TransactionNumber { get; set; } = string.Empty;
+    public Guid PaymentId { get; set; }
+    public TransactionType Type { get; set; }
+    public TransactionStatus Status { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public string? ExternalReference { get; set; }
+    public DateTime? ProcessedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

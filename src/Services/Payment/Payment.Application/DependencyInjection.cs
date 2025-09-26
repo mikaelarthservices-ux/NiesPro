@@ -31,10 +31,26 @@ namespace Payment.Application
     }
 }
 
+// DTO temporaire pour Order
+public class OrderDto
+{
+    public Guid Id { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "EUR";
+    public string Status { get; set; } = string.Empty;
+}
+
 // Interface pour le service Order
 public interface IOrderService
 {
-    Task<OrderDto?> GetOrderByIdAsync(Guid orderId, CancellationToken cancellationToken = default);
+    Task<OrderValidationResult> ValidateOrderAsync(Guid orderId, CancellationToken cancellationToken = default);
+}
+
+// Result pour validation Order
+public class OrderValidationResult
+{
+    public bool IsValid { get; set; }
+    public List<string> Errors { get; set; } = new();
 }
 
 // Services temporaires pour les handlers
@@ -44,15 +60,13 @@ namespace Payment.Application.Services
 
     public class OrderService : IOrderService
     {
-        public Task<OrderDto?> GetOrderByIdAsync(Guid orderId, CancellationToken cancellationToken = default)
+        public Task<OrderValidationResult> ValidateOrderAsync(Guid orderId, CancellationToken cancellationToken = default)
         {
-            // Implementation temporaire
-            return Task.FromResult<OrderDto?>(new OrderDto 
-            { 
-                Id = orderId, 
-                Status = OrderStatus.Pending, 
-                TotalAmount = 100m, 
-                Currency = "EUR" 
+            // Implementation temporaire - toujours valide pour le demo
+            return Task.FromResult(new OrderValidationResult 
+            {
+                IsValid = true,
+                Errors = new List<string>()
             });
         }
     }

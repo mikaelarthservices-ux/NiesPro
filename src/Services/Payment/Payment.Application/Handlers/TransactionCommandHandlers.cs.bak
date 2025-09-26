@@ -1,0 +1,536 @@
+using MediatR;
+using Microsoft.Extensions.Logging;
+using Payment.Application.Commands.V2;
+using Payment.Application.Services;
+using Payment.Domain.Entities;
+using Payment.Domain.Interfaces;
+using Payment.Domain.ValueObjects;
+using Payment.Domain.Enums;
+using Payment.Domain.Events;
+using NiesPro.Contracts.Application.CQRS;
+using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
+
+namespace Payment.Application.Handlers.V2;
+
+/// <summary>
+/// Handler pour le remboursement de transaction - NiesPro Enterprise Standard
+/// </summary>
+public class RefundTransactionCommandHandler : BaseCommandHandler<RefundTransactionCommand, ApiResponse<RefundResponse>>,
+    IRequestHandler<RefundTransactionCommand, ApiResponse<RefundResponse>>
+{
+    private readonly ITransactionRepository _transactionRepository;
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly IPaymentProcessorFactory _paymentProcessorFactory;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogsServiceClient _logsService;
+    private readonly IAuditServiceClient _auditService;
+    private readonly IMediator _mediator;
+
+    public RefundTransactionCommandHandler(
+        ITransactionRepository transactionRepository,
+        IPaymentRepository paymentRepository,
+        IPaymentProcessorFactory paymentProcessorFactory,
+        IUnitOfWork unitOfWork,
+        ILogsServiceClient logsService,
+        IAuditServiceClient auditService,
+        IMediator mediator,
+        ILogger<RefundTransactionCommandHandler> logger) : base(logger)
+    {
+        _transactionRepository = transactionRepository;
+        _paymentRepository = paymentRepository;
+        _paymentProcessorFactory = paymentProcessorFactory;
+        _unitOfWork = unitOfWork;
+        _logsService = logsService;
+        _auditService = auditService;
+        _mediator = mediator;
+    }
+
+    public async Task<ApiResponse<RefundResponse>> Handle(RefundTransactionCommand request, CancellationToken cancellationToken)
+        => await HandleAsync(request, cancellationToken);
+
+    protected override async Task<ApiResponse<RefundResponse>> ExecuteAsync(RefundTransactionCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Logger.LogInformation("Processing refund for transaction {TransactionId}", command.TransactionId);
+
+            await _logsService.LogInformationAsync($"Processing refund for transaction: {command.TransactionId}", new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["TransactionId"] = command.TransactionId,
+                ["RefundAmount"] = command.RefundAmount ?? 0m,
+                ["Reason"] = command.Reason,
+                ["HasAdminNotes"] = !string.IsNullOrEmpty(command.AdminNotes)
+            });
+
+            // Récupération de la transaction originale
+            var originalTransaction = await _transactionRepository.GetByIdAsync(command.TransactionId);
+            if (originalTransaction == null)
+            {
+                await _logsService.LogWarningAsync($"Transaction not found: {command.TransactionId}", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["TransactionId"] = command.TransactionId
+                });
+
+                return ApiResponse<RefundResponse>.CreateError(
+                    "Transaction not found",
+                    404
+                );
+            }
+
+            // Validation de l'état de la transaction
+            if (originalTransaction.Status != TransactionStatus.Successful)
+            {
+                await _logsService.LogWarningAsync($"Cannot refund transaction with status: {originalTransaction.Status}", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["TransactionId"] = command.TransactionId,
+                    ["CurrentStatus"] = originalTransaction.Status.ToString()
+                });
+
+                return ApiResponse<RefundResponse>.CreateError(
+                    $"Cannot refund transaction. Current status: {originalTransaction.Status}",
+                    400
+                );
+            }
+
+            // Récupération du paiement associé
+            var payment = await _paymentRepository.GetByIdAsync(originalTransaction.PaymentId);
+            if (payment == null)
+            {
+                await _logsService.LogErrorAsync($"Payment not found for transaction: {command.TransactionId}", null, new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["TransactionId"] = command.TransactionId,
+                    ["PaymentId"] = originalTransaction.PaymentId
+                });
+
+                return ApiResponse<RefundResponse>.CreateError(
+                    "Associated payment not found",
+                    404
+                );
+            }
+
+            // Détermination du montant de remboursement
+            var refundAmount = command.RefundAmount ?? originalTransaction.Amount.Value;
+            if (refundAmount <= 0 || refundAmount > originalTransaction.Amount.Value)
+            {
+                await _logsService.LogWarningAsync($"Invalid refund amount: {refundAmount}", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["TransactionId"] = command.TransactionId,
+                    ["RequestedRefund"] = refundAmount,
+                    ["OriginalAmount"] = originalTransaction.Amount.Value
+                });
+
+                return ApiResponse<RefundResponse>.CreateError(
+                    "Invalid refund amount",
+                    400
+                );
+            }
+
+            // Vérification des remboursements existants
+            var existingRefunds = await _paymentRepository.GetRefundsByPaymentIdAsync(payment.Id);
+            var totalRefunded = existingRefunds.Where(r => r.Status == RefundStatus.Completed)
+                                              .Sum(r => r.Amount.Value);
+
+            if (totalRefunded + refundAmount > payment.Amount.Value)
+            {
+                await _logsService.LogWarningAsync($"Refund exceeds available amount", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["PaymentId"] = payment.Id,
+                    ["PaymentAmount"] = payment.Amount.Value,
+                    ["TotalRefunded"] = totalRefunded,
+                    ["RequestedRefund"] = refundAmount,
+                    ["Available"] = payment.Amount.Value - totalRefunded
+                });
+
+                return ApiResponse<RefundResponse>.CreateError(
+                    "Refund amount exceeds available balance",
+                    400
+                );
+            }
+
+            // Traitement du remboursement via processeur de paiement
+            var processor = _paymentProcessorFactory.GetProcessor(payment.PaymentMethod);
+            var refundResult = await processor.ProcessRefundAsync(new ProcessRefundRequest
+            {
+                OriginalTransactionId = originalTransaction.Id,
+                RefundAmount = new Money(refundAmount, originalTransaction.Amount.Currency),
+                Reason = command.Reason,
+                ExternalReference = originalTransaction.ExternalReference
+            });
+
+            // Création de l'entité PaymentRefund
+            var refund = new PaymentRefund
+            {
+                Id = Guid.NewGuid(),
+                PaymentId = payment.Id,
+                TransactionId = originalTransaction.Id,
+                Amount = new Money(refundAmount, originalTransaction.Amount.Currency),
+                Reason = command.Reason,
+                AdminNotes = command.AdminNotes,
+                Status = refundResult.IsSuccess ? RefundStatus.Completed : RefundStatus.Failed,
+                ExternalRefundId = refundResult.ExternalRefundId,
+                GatewayResponse = refundResult.GatewayResponse,
+                RefundDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Création de la transaction de remboursement
+            var refundTransaction = new Transaction
+            {
+                Id = Guid.NewGuid(),
+                PaymentId = payment.Id,
+                Type = TransactionType.Refund,
+                Status = refundResult.IsSuccess ? TransactionStatus.Successful : TransactionStatus.Failed,
+                Amount = new Money(refundAmount, originalTransaction.Amount.Currency),
+                ExternalReference = refundResult.ExternalRefundId,
+                GatewayResponse = refundResult.GatewayResponse,
+                ProcessedAt = DateTime.UtcNow,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["originalTransactionId"] = originalTransaction.Id,
+                    ["refundReason"] = command.Reason,
+                    ["refundType"] = refundAmount == originalTransaction.Amount.Value ? "Full" : "Partial"
+                }
+            };
+
+            // Persistance
+            await _paymentRepository.AddRefundAsync(refund);
+            await _transactionRepository.AddAsync(refundTransaction);
+
+            // Mise à jour du statut du paiement si remboursement complet
+            if (totalRefunded + refundAmount >= payment.Amount.Value)
+            {
+                payment.Status = PaymentStatus.Refunded;
+                payment.UpdatedAt = DateTime.UtcNow;
+                await _paymentRepository.UpdateAsync(payment);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Audit trail
+            await _auditService.AuditCreateAsync(
+                userId: "System", // Remboursement peut être initié par système ou admin
+                userName: "RefundProcessor",
+                entityName: "PaymentRefund",
+                entityId: refund.Id.ToString(),
+                metadata: new Dictionary<string, object>
+                {
+                    ["paymentId"] = payment.Id,
+                    ["transactionId"] = originalTransaction.Id,
+                    ["refundAmount"] = refundAmount,
+                    ["refundReason"] = command.Reason,
+                    ["status"] = refund.Status.ToString()
+                }
+            );
+
+            // Événement de domaine
+            var refundEvent = refundResult.IsSuccess
+                ? new RefundCompletedEvent
+                {
+                    RefundId = refund.Id,
+                    PaymentId = payment.Id,
+                    TransactionId = refundTransaction.Id,
+                    RefundAmount = refund.Amount,
+                    RefundDate = refund.RefundDate
+                }
+                : new RefundFailedEvent
+                {
+                    RefundId = refund.Id,
+                    PaymentId = payment.Id,
+                    FailureReason = refundResult.FailureReason,
+                    ProcessedAt = DateTime.UtcNow
+                };
+
+            await _mediator.Publish(refundEvent, cancellationToken);
+
+            var response = new RefundResponse
+            {
+                RefundId = refund.Id,
+                RefundAmount = refund.Amount.Value,
+                Status = refund.Status,
+                RefundDate = refund.RefundDate
+            };
+
+            await _logsService.LogInformationAsync($"Refund processed successfully: {refund.Id}", new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["RefundId"] = refund.Id,
+                ["TransactionId"] = refundTransaction.Id,
+                ["Status"] = refund.Status.ToString(),
+                ["Success"] = refundResult.IsSuccess
+            });
+
+            return ApiResponse<RefundResponse>.CreateSuccess(
+                response,
+                refundResult.IsSuccess ? "Refund processed successfully" : "Refund processing failed",
+                200
+            );
+        }
+        catch (Exception ex)
+        {
+            await _logsService.LogErrorAsync($"Error processing refund for transaction: {command.TransactionId}", ex, new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["TransactionId"] = command.TransactionId,
+                ["ErrorMessage"] = ex.Message
+            });
+
+            Logger.LogError(ex, "Error processing refund for transaction {TransactionId}", command.TransactionId);
+            
+            return ApiResponse<RefundResponse>.CreateError(
+                "Internal server error while processing refund",
+                500,
+                new[] { ex.Message }
+            );
+        }
+    }
+}
+
+/// <summary>
+/// Handler pour la capture d'autorisation - NiesPro Enterprise Standard
+/// </summary>
+public class CaptureTransactionCommandHandler : BaseCommandHandler<CaptureTransactionCommand, ApiResponse<TransactionResponse>>,
+    IRequestHandler<CaptureTransactionCommand, ApiResponse<TransactionResponse>>
+{
+    private readonly ITransactionRepository _transactionRepository;
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly IPaymentProcessorFactory _paymentProcessorFactory;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogsServiceClient _logsService;
+    private readonly IAuditServiceClient _auditService;
+    private readonly IMediator _mediator;
+
+    public CaptureTransactionCommandHandler(
+        ITransactionRepository transactionRepository,
+        IPaymentRepository paymentRepository,
+        IPaymentProcessorFactory paymentProcessorFactory,
+        IUnitOfWork unitOfWork,
+        ILogsServiceClient logsService,
+        IAuditServiceClient auditService,
+        IMediator mediator,
+        ILogger<CaptureTransactionCommandHandler> logger) : base(logger)
+    {
+        _transactionRepository = transactionRepository;
+        _paymentRepository = paymentRepository;
+        _paymentProcessorFactory = paymentProcessorFactory;
+        _unitOfWork = unitOfWork;
+        _logsService = logsService;
+        _auditService = auditService;
+        _mediator = mediator;
+    }
+
+    public async Task<ApiResponse<TransactionResponse>> Handle(CaptureTransactionCommand request, CancellationToken cancellationToken)
+        => await HandleAsync(request, cancellationToken);
+
+    protected override async Task<ApiResponse<TransactionResponse>> ExecuteAsync(CaptureTransactionCommand command, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Logger.LogInformation("Capturing authorization transaction {AuthorizationTransactionId}", command.AuthorizationTransactionId);
+
+            await _logsService.LogInformationAsync($"Capturing authorization: {command.AuthorizationTransactionId}", new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["AuthorizationTransactionId"] = command.AuthorizationTransactionId,
+                ["CaptureAmount"] = command.CaptureAmount ?? 0m
+            });
+
+            // Récupération de la transaction d'autorisation
+            var authTransaction = await _transactionRepository.GetByIdAsync(command.AuthorizationTransactionId);
+            if (authTransaction == null)
+            {
+                await _logsService.LogWarningAsync($"Authorization transaction not found: {command.AuthorizationTransactionId}", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["AuthorizationTransactionId"] = command.AuthorizationTransactionId
+                });
+
+                return ApiResponse<TransactionResponse>.CreateError(
+                    "Authorization transaction not found",
+                    404
+                );
+            }
+
+            // Validation du type et statut de transaction
+            if (authTransaction.Type != TransactionType.Authorization || authTransaction.Status != TransactionStatus.Successful)
+            {
+                await _logsService.LogWarningAsync($"Invalid transaction for capture", new Dictionary<string, object>
+                {
+                    ["CommandId"] = command.CommandId,
+                    ["TransactionId"] = command.AuthorizationTransactionId,
+                    ["Type"] = authTransaction.Type.ToString(),
+                    ["Status"] = authTransaction.Status.ToString()
+                });
+
+                return ApiResponse<TransactionResponse>.CreateError(
+                    "Invalid transaction for capture",
+                    400
+                );
+            }
+
+            // Récupération du paiement associé
+            var payment = await _paymentRepository.GetByIdAsync(authTransaction.PaymentId);
+            if (payment == null)
+            {
+                return ApiResponse<TransactionResponse>.CreateError(
+                    "Associated payment not found",
+                    404
+                );
+            }
+
+            // Détermination du montant de capture
+            var captureAmount = command.CaptureAmount ?? authTransaction.Amount.Value;
+            if (captureAmount <= 0 || captureAmount > authTransaction.Amount.Value)
+            {
+                return ApiResponse<TransactionResponse>.CreateError(
+                    "Invalid capture amount",
+                    400
+                );
+            }
+
+            // Traitement de la capture via processeur de paiement
+            var processor = _paymentProcessorFactory.GetProcessor(payment.PaymentMethod);
+            var captureResult = await processor.ProcessCaptureAsync(new ProcessCaptureRequest
+            {
+                AuthorizationTransactionId = authTransaction.Id,
+                CaptureAmount = new Money(captureAmount, authTransaction.Amount.Currency),
+                ExternalReference = authTransaction.ExternalReference,
+                Metadata = command.CaptureMetadata
+            });
+
+            // Création de la transaction de capture
+            var captureTransaction = new Transaction
+            {
+                Id = Guid.NewGuid(),
+                PaymentId = payment.Id,
+                Type = TransactionType.Capture,
+                Status = captureResult.IsSuccess ? TransactionStatus.Successful : TransactionStatus.Failed,
+                Amount = new Money(captureAmount, authTransaction.Amount.Currency),
+                ExternalReference = captureResult.ExternalTransactionId,
+                GatewayResponse = captureResult.GatewayResponse,
+                ProcessedAt = DateTime.UtcNow,
+                Metadata = command.CaptureMetadata ?? new Dictionary<string, object>()
+            };
+
+            captureTransaction.Metadata["authorizationTransactionId"] = authTransaction.Id;
+            captureTransaction.Metadata["captureType"] = captureAmount == authTransaction.Amount.Value ? "Full" : "Partial";
+
+            await _transactionRepository.AddAsync(captureTransaction);
+
+            // Mise à jour du statut du paiement
+            if (captureResult.IsSuccess)
+            {
+                payment.Status = PaymentStatus.Completed;
+                payment.UpdatedAt = DateTime.UtcNow;
+                await _paymentRepository.UpdateAsync(payment);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Audit trail
+            await _auditService.AuditCreateAsync(
+                userId: payment.CustomerId.ToString(),
+                userName: "Customer",
+                entityName: "Transaction",
+                entityId: captureTransaction.Id.ToString(),
+                metadata: new Dictionary<string, object>
+                {
+                    ["paymentId"] = payment.Id,
+                    ["authorizationId"] = authTransaction.Id,
+                    ["captureAmount"] = captureAmount,
+                    ["transactionType"] = "Capture",
+                    ["status"] = captureTransaction.Status.ToString()
+                }
+            );
+
+            // Événement de domaine
+            var captureEvent = captureResult.IsSuccess
+                ? new TransactionCapturedEvent
+                {
+                    TransactionId = captureTransaction.Id,
+                    PaymentId = payment.Id,
+                    AuthorizationTransactionId = authTransaction.Id,
+                    CaptureAmount = captureTransaction.Amount,
+                    ProcessedAt = captureTransaction.ProcessedAt
+                }
+                : new TransactionCaptureFailedEvent
+                {
+                    TransactionId = captureTransaction.Id,
+                    PaymentId = payment.Id,
+                    FailureReason = captureResult.FailureReason,
+                    ProcessedAt = captureTransaction.ProcessedAt
+                };
+
+            await _mediator.Publish(captureEvent, cancellationToken);
+
+            var response = new TransactionResponse
+            {
+                TransactionId = captureTransaction.Id,
+                Status = captureTransaction.Status,
+                Amount = captureTransaction.Amount.Value,
+                ExternalReference = captureTransaction.ExternalReference,
+                ProcessedAt = captureTransaction.ProcessedAt
+            };
+
+            await _logsService.LogInformationAsync($"Transaction capture processed: {captureTransaction.Id}", new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["CaptureTransactionId"] = captureTransaction.Id,
+                ["AuthorizationTransactionId"] = authTransaction.Id,
+                ["Status"] = captureTransaction.Status.ToString(),
+                ["Success"] = captureResult.IsSuccess
+            });
+
+            return ApiResponse<TransactionResponse>.CreateSuccess(
+                response,
+                captureResult.IsSuccess ? "Transaction captured successfully" : "Transaction capture failed",
+                200
+            );
+        }
+        catch (Exception ex)
+        {
+            await _logsService.LogErrorAsync($"Error capturing transaction: {command.AuthorizationTransactionId}", ex, new Dictionary<string, object>
+            {
+                ["CommandId"] = command.CommandId,
+                ["AuthorizationTransactionId"] = command.AuthorizationTransactionId,
+                ["ErrorMessage"] = ex.Message
+            });
+
+            Logger.LogError(ex, "Error capturing transaction {AuthorizationTransactionId}", command.AuthorizationTransactionId);
+            
+            return ApiResponse<TransactionResponse>.CreateError(
+                "Internal server error while capturing transaction",
+                500,
+                new[] { ex.Message }
+            );
+        }
+    }
+}
+
+/// <summary>
+/// Request pour le processeur de remboursement
+/// </summary>
+public class ProcessRefundRequest
+{
+    public Guid OriginalTransactionId { get; set; }
+    public Money RefundAmount { get; set; } = null!;
+    public string Reason { get; set; } = string.Empty;
+    public string? ExternalReference { get; set; }
+}
+
+/// <summary>
+/// Request pour le processeur de capture
+/// </summary>
+public class ProcessCaptureRequest
+{
+    public Guid AuthorizationTransactionId { get; set; }
+    public Money CaptureAmount { get; set; } = null!;
+    public string? ExternalReference { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
+}
