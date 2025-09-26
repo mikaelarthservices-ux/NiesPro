@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using MediatR;
 
 namespace NiesPro.Contracts.Application.CQRS
 {
@@ -7,7 +8,7 @@ namespace NiesPro.Contracts.Application.CQRS
     /// Commands represent write operations that change system state
     /// Migrated from BuildingBlocks.Common.CQRS
     /// </summary>
-    public interface ICommand
+    public interface ICommand : IRequest
     {
         /// <summary>
         /// Unique identifier for tracking this command
@@ -24,7 +25,7 @@ namespace NiesPro.Contracts.Application.CQRS
     /// Command interface with return value
     /// </summary>
     /// <typeparam name="TResponse">Response type</typeparam>
-    public interface ICommand<out TResponse>
+    public interface ICommand<out TResponse> : IRequest<TResponse>
     {
         /// <summary>
         /// Unique identifier for tracking this command
@@ -42,7 +43,7 @@ namespace NiesPro.Contracts.Application.CQRS
     /// Queries represent read operations that don't change system state
     /// </summary>
     /// <typeparam name="TResponse">Response type</typeparam>
-    public interface IQuery<out TResponse>
+    public interface IQuery<out TResponse> : IRequest<TResponse>
     {
         /// <summary>
         /// Unique identifier for tracking this query

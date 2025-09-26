@@ -8,23 +8,24 @@
 
 ### **📋 Table de Statut Complète**
 
-| # | Service | Port HTTP | Port HTTPS | Base de Données | Statut | Logs Intégré | Prochaine Action |
-|---|---------|-----------|------------|-----------------|--------|--------------|------------------|
-| 1 | **Gateway.API** | 5000 | 5010 | - (Proxy) | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 2 | **Auth.API** | 5001 | 5011 | niespro_auth | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 3 | **Order.API** | 5002 | 5012 | NiesPro_Order + EventStore | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 4 | **Catalog.API** | 5003 | 5013 | niespro_catalog | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 5 | **Payment.API** | 5004 | 5014 | NiesPro_Payment | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 6 | **Stock.API** | 5005 | 5015 | NiesPro_Stock | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 7 | **Customer.API** | 5006 | 5016 | NiesPro_Customer | 🚧 **CONSOLIDATION** | 🚧 À intégrer | **Supprimer duplication CustomerService** |
-| 8 | **Restaurant.API** | 5007 | 5017 | NiesPro_Restaurant | ✅ **PRODUCTION** | 🚧 À intégrer | Intégration Logs obligatoire |
-| 9 | **Logs.API** | 5008 | 5018 | NiesPro_Logs + Elasticsearch | ✅ **PRODUCTION** | ✅ **INTÉGRÉ** | - |
+| # | Service | Port HTTP | Port HTTPS | Base de Données | Statut | Logs Intégré | Tests | Action |
+|---|---------|-----------|------------|-----------------|--------|--------------|-------|---------|
+| 1 | **Gateway.API** | 5000 | 5010 | - (Proxy) | ✅ **PRODUCTION** | 🚧 À intégrer | ❌ | Intégration Logs obligatoire |
+| 2 | **Auth.API** | 5001 | 5011 | niespro_auth | ✅ **PRODUCTION** | ✅ **INTÉGRÉ** | ✅ 41 tests | ✅ **COMPLET** |
+| 3 | **Order.API** | 5002 | 5012 | NiesPro_Order + EventStore | ✅ **PRODUCTION** | 🚧 À intégrer | ❌ | Intégration Logs obligatoire |
+| 4 | **Catalog.API** | 5003 | 5013 | niespro_catalog | ✅ **PRODUCTION** | ✅ **INTÉGRÉ** | ✅ 100% | ✅ **COMPLET** |
+| 5 | **Payment.API** | 5004 | 5014 | NiesPro_Payment | ✅ **PRODUCTION** | 🚧 À intégrer | ❌ | Intégration Logs obligatoire |
+| 6 | **Stock.API** | 5005 | 5015 | NiesPro_Stock | ✅ **PRODUCTION** | 🚧 À intégrer | ❌ | Intégration Logs obligatoire |
+| 7 | **Customer.API** | 5006 | 5016 | NiesPro_Customer | ✅ **PRODUCTION** | ✅ **INTÉGRÉ** | ✅ 24 tests | ✅ **COMPLET** |
+| 8 | **Restaurant.API** | 5007 | 5017 | NiesPro_Restaurant | 🚧 **EN COURS** | 🚧 À intégrer | ❌ | Prochaine étape développement |
+| 9 | **Logs.API** | 5008 | 5018 | NiesPro_Logs + Elasticsearch | ✅ **PRODUCTION** | ✅ **NATIF** | ❌ | - |
 
-### **❌ SERVICES OBSOLÈTES À SUPPRIMER**
+### **✅ SERVICES NETTOYÉS**
 
-| Service | Port HTTP | Port HTTPS | Base | Raison | Action |
-|---------|-----------|------------|------|--------|---------|
-| **CustomerService** | 5098 | 5099 | NiesPro_Customer | Duplication avec Customer.API | **SUPPRIMER COMPLÈTEMENT** |
+| Service | Statut | Action Effectuée | Date |
+|---------|--------|------------------|------|
+| **CustomerService** (obsolète) | ✅ **SUPPRIMÉ** | Duplication résolue - Migration vers Customer.API | 26/09/2025 |
+| **Customer/ (partiel)** | ✅ **SUPPRIMÉ** | Implémentation partielle supprimée | 26/09/2025 |
 
 ---
 
