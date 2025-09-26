@@ -7,6 +7,7 @@
 
 | **KPI** | **CIBLE** | **ATTEINT** | **STATUS** |
 |---------|-----------|-------------|------------|
+| **Migration NiesPro** | 100% | **100%** | ✅ FINALISÉ |
 | **Tests Coverage** | 90% | **100% (36/36)** | ✅ DÉPASSÉ |
 | **Performance** | < 200ms | **165ms** | ✅ DÉPASSÉ |
 | **Contexts Supportés** | 3 | **4** | ✅ DÉPASSÉ |

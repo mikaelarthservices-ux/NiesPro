@@ -1,14 +1,20 @@
 using Catalog.Application.DTOs;
 using MediatR;
+using NiesPro.Contracts.Application.CQRS;
 using NiesPro.Contracts.Common;
 
 namespace Catalog.Application.Features.Products.Commands.CreateProduct
 {
     /// <summary>
-    /// Create product command
+    /// Create product command - NiesPro Enterprise Standard
     /// </summary>
-    public record CreateProductCommand : IRequest<ApiResponse<ProductDto>>
+    public record CreateProductCommand : ICommand<ApiResponse<ProductDto>>, IRequest<ApiResponse<ProductDto>>
     {
+        /// <inheritdoc />
+        public Guid CommandId { get; } = Guid.NewGuid();
+
+        /// <inheritdoc />
+        public DateTime Timestamp { get; } = DateTime.UtcNow;
         public string Name { get; init; } = string.Empty;
         public string SKU { get; init; } = string.Empty;
         public string? Description { get; init; }

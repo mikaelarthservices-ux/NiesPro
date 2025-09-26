@@ -5,6 +5,7 @@ using Auth.Application.Features.Users.Queries.GetUserProfile;
 using Auth.Application.Features.Users.Queries.GetAllUsers;
 using Auth.API.Models.Requests;
 using Auth.API.Models.Responses;
+using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 
 namespace Auth.API.Controllers.V1
@@ -60,7 +61,7 @@ namespace Auth.API.Controllers.V1
                     IncludeDevices = includeDevices
                 };
 
-                var result = await _mediator.Send(query);
+                var result = (ApiResponse<Auth.Application.Features.Users.Queries.GetUserProfile.UserProfileResponse>)await _mediator.Send(query);
 
                 if (result.IsSuccess)
                 {
@@ -114,7 +115,7 @@ namespace Auth.API.Controllers.V1
                     IncludeDevices = includeDevices
                 };
 
-                var result = await _mediator.Send(query);
+                var result = (ApiResponse<Auth.Application.Features.Users.Queries.GetUserProfile.UserProfileResponse>)await _mediator.Send(query);
 
                 if (result.IsSuccess)
                 {
@@ -165,7 +166,7 @@ namespace Auth.API.Controllers.V1
                     IncludeDeviceCount = request.IncludeDeviceCount
                 };
 
-                var result = await _mediator.Send(query);
+                var result = (ApiResponse<GetAllUsersResponse>)await _mediator.Send(query);
 
                 if (result.IsSuccess)
                 {

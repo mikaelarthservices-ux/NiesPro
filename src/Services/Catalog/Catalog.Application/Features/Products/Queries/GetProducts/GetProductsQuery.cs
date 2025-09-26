@@ -1,14 +1,19 @@
 using Catalog.Application.DTOs;
 using MediatR;
+using NiesPro.Contracts.Application.CQRS;
 using NiesPro.Contracts.Common;
 
 namespace Catalog.Application.Features.Products.Queries.GetProducts
 {
     /// <summary>
-    /// Get products with filtering and pagination
+    /// Get products with filtering and pagination - NiesPro Enterprise Implementation
     /// </summary>
-    public record GetProductsQuery : IRequest<ApiResponse<PagedResultDto<ProductSummaryDto>>>
+    public record GetProductsQuery : IQuery<ApiResponse<PagedResultDto<ProductSummaryDto>>>, IRequest<ApiResponse<PagedResultDto<ProductSummaryDto>>>
     {
+        // NiesPro Enterprise: Query audit properties
+        public Guid QueryId { get; set; } = Guid.NewGuid();
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        
         public string? SearchTerm { get; init; }
         public Guid? CategoryId { get; init; }
         public Guid? BrandId { get; init; }

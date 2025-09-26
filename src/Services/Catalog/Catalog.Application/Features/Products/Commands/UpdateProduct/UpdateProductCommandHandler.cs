@@ -1,92 +1,134 @@
 using Catalog.Application.DTOs;
+using Catalog.Domain.Entities;
 using Catalog.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using NiesPro.Contracts.Application.CQRS;
 using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
 
 namespace Catalog.Application.Features.Products.Commands.UpdateProduct
 {
     /// <summary>
-    /// Handler for UpdateProductCommand
+    /// Handler for UpdateProductCommand - NiesPro Enterprise Implementation
     /// </summary>
-    public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, ApiResponse<ProductDto>>
+    public class UpdateProductCommandHandler : 
+        BaseCommandHandler<UpdateProductCommand, ApiResponse<ProductDto>>,
+        IRequestHandler<UpdateProductCommand, ApiResponse<ProductDto>>
     {
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IBrandRepository _brandRepository;
         private readonly ILogger<UpdateProductCommandHandler> _logger;
+        private readonly ILogsServiceClient _logsService;
 
         public UpdateProductCommandHandler(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             IBrandRepository brandRepository,
-            ILogger<UpdateProductCommandHandler> logger)
+            ILogger<UpdateProductCommandHandler> logger,
+            ILogsServiceClient logsService) : base(logger)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _brandRepository = brandRepository;
             _logger = logger;
+            _logsService = logsService;
         }
 
+        /// <summary>
+        /// MediatR Handle method - delegates to BaseCommandHandler
+        /// </summary>
         public async Task<ApiResponse<ProductDto>> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
+            => await HandleAsync(request, cancellationToken);
+
+        /// <summary>
+        /// Execute update product command - NiesPro Enterprise Implementation
+        /// </summary>
+        protected override async Task<ApiResponse<ProductDto>> ExecuteAsync(UpdateProductCommand command, CancellationToken cancellationToken)
         {
             try
             {
-                _logger.LogInformation("Updating product with ID: {ProductId}", request.Id);
+                // NiesPro Enterprise: Enhanced logging with audit trail
+                await _logsService.LogInformationAsync($"Updating product with ID: {command.Id}", new Dictionary<string, object>
+                {
+                    ["ProductId"] = command.Id,
+                    ["ProductName"] = command.Name,
+                    ["SKU"] = command.SKU,
+                    ["CategoryId"] = command.CategoryId,
+                    ["BrandId"] = command.BrandId ?? (object)"null",
+                    ["Price"] = command.Price,
+                    ["CommandId"] = command.CommandId
+                });
 
-                // Get existing product
-                var product = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
+                // 1. Get existing product
+                var product = await _productRepository.GetByIdAsync(command.Id, cancellationToken);
                 if (product == null)
                 {
-                    _logger.LogWarning("Product not found with ID: {ProductId}", request.Id);
+                    await _logsService.LogWarningAsync($"Product not found with ID: {command.Id}", new Dictionary<string, object> 
+                    { 
+                        ["ProductId"] = command.Id 
+                    });
                     return ApiResponse<ProductDto>.CreateError("Product not found");
                 }
 
-                // Validate category exists
-                var categoryEntity = await _categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
-                if (categoryEntity == null)
+                // 2. Validate category exists
+                var categoryEntity = await _categoryRepository.GetByIdAsync(command.CategoryId, cancellationToken);
+                if (categoryEntity == null || !categoryEntity.IsActive)
                 {
-                    _logger.LogWarning("Category not found with ID: {CategoryId}", request.CategoryId);
-                    return ApiResponse<ProductDto>.CreateError("Category not found");
+                    await _logsService.LogWarningAsync($"Category not found or inactive with ID: {command.CategoryId}", new Dictionary<string, object> 
+                    { 
+                        ["CategoryId"] = command.CategoryId 
+                    });
+                    return ApiResponse<ProductDto>.CreateError("Category not found or inactive");
                 }
 
-                // Validate brand exists if provided
-                if (request.BrandId.HasValue)
+                // 3. Validate brand exists if provided
+                Brand? brand = null;
+                if (command.BrandId.HasValue)
                 {
-                    var brandEntity = await _brandRepository.GetByIdAsync(request.BrandId.Value, cancellationToken);
-                    if (brandEntity == null)
+                    brand = await _brandRepository.GetByIdAsync(command.BrandId.Value, cancellationToken);
+                    if (brand == null || !brand.IsActive)
                     {
-                        _logger.LogWarning("Brand not found with ID: {BrandId}", request.BrandId);
-                        return ApiResponse<ProductDto>.CreateError("Brand not found");
+                        await _logsService.LogWarningAsync($"Brand not found or inactive with ID: {command.BrandId}", new Dictionary<string, object> 
+                        { 
+                            ["BrandId"] = command.BrandId ?? (object)"null" 
+                        });
+                        return ApiResponse<ProductDto>.CreateError("Brand not found or inactive");
                     }
                 }
 
-                // Update product properties
-                product.Name = request.Name;
-                product.Description = request.Description;
-                product.SKU = request.SKU;
-                product.Price = request.Price;
-                product.ComparePrice = request.ComparePrice;
-                product.TrackQuantity = request.TrackQuantity;
-                product.Quantity = request.Quantity;
-                product.Weight = request.Weight;
-                product.ImageUrl = request.ImageUrl;
-                product.IsActive = request.IsActive;
-                product.IsFeatured = request.IsFeatured;
-                product.CategoryId = request.CategoryId;
-                product.BrandId = request.BrandId;
+                // 4. Update product properties
+                product.Name = command.Name;
+                product.Description = command.Description;
+                product.SKU = command.SKU;
+                product.Price = command.Price;
+                product.ComparePrice = command.ComparePrice;
+                product.TrackQuantity = command.TrackQuantity;
+                product.Quantity = command.Quantity;
+                product.Weight = command.Weight;
+                product.ImageUrl = command.ImageUrl;
+                product.IsActive = command.IsActive;
+                product.IsFeatured = command.IsFeatured;
+                product.CategoryId = command.CategoryId;
+                product.BrandId = command.BrandId;
                 product.UpdatedAt = DateTime.UtcNow;
 
-                // Update in repository (assuming the repository has an Update method)
+                // 5. Update in repository
                 await _productRepository.UpdateAsync(product, cancellationToken);
 
-                // Get updated details for response
-                var category = await _categoryRepository.GetByIdAsync(product.CategoryId, cancellationToken);
-                var brand = product.BrandId.HasValue 
-                    ? await _brandRepository.GetByIdAsync(product.BrandId.Value, cancellationToken)
-                    : null;
+                // NiesPro Enterprise: Enhanced audit trail for successful update
+                await _logsService.LogInformationAsync($"Product updated successfully with ID: {product.Id}", new Dictionary<string, object>
+                {
+                    ["ProductId"] = product.Id,
+                    ["SKU"] = product.SKU,
+                    ["Name"] = product.Name,
+                    ["CategoryId"] = product.CategoryId,
+                    ["Price"] = product.Price,
+                    ["CommandId"] = command.CommandId
+                });
 
-                // Convert to DTO
+                // 6. Create response DTO
                 var productDto = new ProductDto
                 {
                     Id = product.Id,
@@ -109,19 +151,22 @@ namespace Catalog.Application.Features.Products.Commands.UpdateProduct
                     CreatedAt = product.CreatedAt,
                     UpdatedAt = product.UpdatedAt,
                     CategoryId = product.CategoryId,
-                    CategoryName = category?.Name,
+                    CategoryName = categoryEntity.Name,
                     BrandId = product.BrandId,
                     BrandName = brand?.Name
                 };
-
-                _logger.LogInformation("Successfully updated product: {ProductName} (ID: {ProductId})", 
-                    product.Name, product.Id);
 
                 return ApiResponse<ProductDto>.CreateSuccess(productDto, "Product updated successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating product with ID: {ProductId}", request.Id);
+                await _logsService.LogErrorAsync(ex, "Error occurred while updating product", new Dictionary<string, object>
+                {
+                    ["ProductId"] = command.Id,
+                    ["ProductName"] = command.Name,
+                    ["CommandId"] = command.CommandId
+                });
+
                 return ApiResponse<ProductDto>.CreateError("An error occurred while updating the product");
             }
         }

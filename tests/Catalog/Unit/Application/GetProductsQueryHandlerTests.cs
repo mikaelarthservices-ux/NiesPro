@@ -28,7 +28,8 @@ namespace Catalog.Tests.Unit.Application
         {
             _productRepositoryMock = new Mock<IProductRepository>();
             _loggerMock = new Mock<ILogger<GetProductsQueryHandler>>();
-            _handler = new GetProductsQueryHandler(_productRepositoryMock.Object, _loggerMock.Object);
+            var logsServiceMock = new Mock<NiesPro.Logging.Client.ILogsServiceClient>();
+            _handler = new GetProductsQueryHandler(_productRepositoryMock.Object, _loggerMock.Object, logsServiceMock.Object);
             _fixture = new Fixture();
 
             // Configure AutoFixture to handle circular references

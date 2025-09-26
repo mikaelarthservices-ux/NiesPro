@@ -28,7 +28,8 @@ namespace Catalog.Tests.Unit.Application
         {
             _categoryRepositoryMock = new Mock<ICategoryRepository>();
             _loggerMock = new Mock<ILogger<GetCategoriesQueryHandler>>();
-            _handler = new GetCategoriesQueryHandler(_categoryRepositoryMock.Object, _loggerMock.Object);
+            var logsServiceMock = new Mock<NiesPro.Logging.Client.ILogsServiceClient>();
+            _handler = new GetCategoriesQueryHandler(_categoryRepositoryMock.Object, _loggerMock.Object, logsServiceMock.Object);
             _fixture = new Fixture();
 
             // Configure AutoFixture to handle circular references

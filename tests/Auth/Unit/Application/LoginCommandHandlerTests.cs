@@ -8,6 +8,7 @@ using Auth.Domain.Interfaces;
 using Auth.Application.Contracts.Services;
 using Auth.Domain.Entities;
 using NiesPro.Contracts.Common;
+using NiesPro.Logging.Client;
 
 namespace Auth.Tests.Unit.Application;
 
@@ -25,6 +26,8 @@ public class LoginCommandHandlerTests
     private Mock<IJwtService> _mockJwtService;
     private Mock<IUnitOfWork> _mockUnitOfWork;
     private Mock<ILogger<LoginCommandHandler>> _mockLogger;
+    private Mock<ILogsServiceClient> _mockLogsService;
+    private Mock<IAuditServiceClient> _mockAuditService;
     private LoginCommandHandler _handler;
 
     [SetUp]
@@ -42,6 +45,8 @@ public class LoginCommandHandlerTests
         _mockJwtService = new Mock<IJwtService>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockLogger = new Mock<ILogger<LoginCommandHandler>>();
+        _mockLogsService = new Mock<ILogsServiceClient>();
+        _mockAuditService = new Mock<IAuditServiceClient>();
 
         _handler = new LoginCommandHandler(
             _mockUserRepository.Object,
@@ -50,7 +55,9 @@ public class LoginCommandHandlerTests
             _mockPasswordService.Object,
             _mockJwtService.Object,
             _mockUnitOfWork.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockLogsService.Object,
+            _mockAuditService.Object
         );
     }
 

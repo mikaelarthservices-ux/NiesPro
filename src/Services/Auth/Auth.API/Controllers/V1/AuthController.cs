@@ -7,6 +7,7 @@ using Auth.Application.Features.Users.Commands.RegisterUser;
 using Auth.Application.Features.Users.Commands.ChangePassword;
 using Auth.API.Models.Requests;
 using Auth.API.Models.Responses;
+using Auth.Application.Common.Models;
 using NiesPro.Contracts.Common;
 
 namespace Auth.API.Controllers.V1
@@ -57,7 +58,7 @@ namespace Auth.API.Controllers.V1
                     UserAgent = Request.Headers.UserAgent.ToString()
                 };
 
-                var result = await _mediator.Send(command);
+                var result = (ApiResponse<LoginResponse>)await _mediator.Send(command);
 
                 if (result.IsSuccess)
                 {
@@ -125,7 +126,7 @@ namespace Auth.API.Controllers.V1
                     UserAgent = Request.Headers.UserAgent.ToString()
                 };
 
-                var result = await _mediator.Send(command);
+                var result = (ApiResponse<Auth.Application.Features.Users.Commands.RegisterUser.RegisterUserResponse>)await _mediator.Send(command);
 
                 if (result.IsSuccess)
                 {
@@ -185,7 +186,7 @@ namespace Auth.API.Controllers.V1
                     UserAgent = Request.Headers.UserAgent.ToString()
                 };
 
-                var result = await _mediator.Send(command);
+                var result = (ApiResponse<Auth.Application.Features.Users.Commands.ChangePassword.ChangePasswordResponse>)await _mediator.Send(command);
 
                 if (result.IsSuccess)
                 {
@@ -236,7 +237,7 @@ namespace Auth.API.Controllers.V1
                     UserAgent = GetUserAgent()
                 };
 
-                var result = await _mediator.Send(command);
+                var result = (ApiResponse<RefreshTokenResponse>)await _mediator.Send(command);
 
                 if (result.IsSuccess)
                 {

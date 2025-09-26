@@ -26,12 +26,14 @@ namespace Catalog.Tests.Unit.Application
             _categoryRepositoryMock = new Mock<ICategoryRepository>();
             _brandRepositoryMock = new Mock<IBrandRepository>();
             _loggerMock = new Mock<ILogger<CreateProductCommandHandler>>();
+            var logsServiceMock = new Mock<NiesPro.Logging.Client.ILogsServiceClient>();
 
             _handler = new CreateProductCommandHandler(
                 _productRepositoryMock.Object,
                 _categoryRepositoryMock.Object,
                 _brandRepositoryMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                logsServiceMock.Object);
         }
 
         [Test]
